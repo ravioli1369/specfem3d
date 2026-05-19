@@ -81,7 +81,7 @@ contains
   integer :: i,j,k,iglob,ispec,istat,ier
 
   ! opens gravity parameter file
-  open(unit=IIN_G,file='../DATA/gravity_stations',status='old',iostat=ier)
+  open(unit=IIN_G,file='./DATA/gravity_stations',status='old',iostat=ier)
 
   ! checks if file exists
   if (ier /= 0) then
