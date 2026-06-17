@@ -327,7 +327,7 @@ contains
   subroutine gravity_timeseries()
 
   use constants, only: GRAV
-  use specfem_par, only: xstore, ystore, zstore, it, NGLOB_AB
+  use specfem_par, only: xstore, ystore, zstore, it, NGLOB_AB, GPU_MODE, Mesh_pointer
   use specfem_par_elastic, only: displ
 
   implicit none
@@ -342,6 +342,7 @@ contains
 
   if (mod(it,ntimgap) == 0) then
     it_grav = nint(dble(it)/dble(ntimgap))
+    if (GPU_MODE) call transfer_displ_from_device(NDIM*NGLOB_AB, displ, Mesh_pointer)
     allocate(Rg(NGLOB_AB),stat=ier)
     if (ier /= 0) call exit_MPI_without_rank('error allocating array 2241')
     allocate(dotP(NGLOB_AB),stat=ier)

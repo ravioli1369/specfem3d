@@ -301,10 +301,7 @@
 
     ! calculating gravity field at current timestep
 
-    if (GRAVITY_SIMULATION) then
-      if (GPU_MODE) call transfer_fields_el_from_device(NDIM*NGLOB_AB,displ,veloc,accel,Mesh_pointer)
-      call gravity_timeseries()
-    endif
+    if (GRAVITY_SIMULATION) call gravity_timeseries()
 
     ! write the seismograms with time shift (GPU_MODE transfer included)
     call write_seismograms()
