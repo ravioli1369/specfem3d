@@ -48,6 +48,9 @@ module gravity_perturbation
   real(kind=CUSTOM_REAL), dimension(:), allocatable :: xstat,ystat,zstat
   real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: accE,accN,accZ
   real(kind=CUSTOM_REAL), dimension(:), allocatable :: rho0_wm
+  ! time-invariant per-node per-station gravity integral weights (precomputed in gravity_init)
+  ! w3 = G_const*rho0_wm/Rg**3 ; w5 = 3*G_const*rho0_wm/Rg**5
+  real(kind=CUSTOM_REAL), dimension(:,:), allocatable :: w3,w5
 
   logical, save :: GRAVITY_SIMULATION = .false.
 
@@ -59,7 +62,7 @@ contains
 
   subroutine gravity_init()
 
-  use constants, only: IMAIN,IIN_G,myrank,NGLLX,NGLLY,NGLLZ
+  use constants, only: IMAIN,IIN_G,myrank,NGLLX,NGLLY,NGLLZ,GRAV
 
   use specfem_par, only: NGLOB_AB, NSTEP, NSPEC_AB, &
        rhostore, &
@@ -71,6 +74,10 @@ contains
   implicit none
 
   ! local parameters
+  ! same gravitational constant (cast to CUSTOM_REAL) as used in gravity_timeseries
+  real(kind=CUSTOM_REAL), parameter :: G_const = GRAV
+  ! per-node station distance used only while precomputing the time-invariant weights
+  real(kind=CUSTOM_REAL) :: Rg
   real(kind=CUSTOM_REAL), dimension(NGLLX,NGLLY,NGLLZ):: rho_elem
   double precision :: Jac3D
   ! coordinates of the control points
@@ -192,6 +199,26 @@ contains
       enddo
     enddo
 
+  enddo
+
+  ! precomputes the time-invariant per-node per-station weights used by gravity_timeseries.
+  ! rho0_wm (mass-integration weight) and the station coordinates are both final at this point,
+  ! and xstore/ystore/zstore are constant in time, so w3/w5 need only be built once here.
+  allocate(w3(NGLOB_AB,nstat),stat=ier)
+  if (ier /= 0) call exit_MPI_without_rank('error allocating array 2243')
+  allocate(w5(NGLOB_AB,nstat),stat=ier)
+  if (ier /= 0) call exit_MPI_without_rank('error allocating array 2244')
+  w3 = 0._CUSTOM_REAL
+  w5 = 0._CUSTOM_REAL
+
+  do istat = 1,nstat
+    do iglob = 1,NGLOB_AB
+      Rg = sqrt((xstore(iglob)-xstat(istat))**2 &
+              + (ystore(iglob)-ystat(istat))**2 &
+              + (zstore(iglob)-zstat(istat))**2)
+      w3(iglob,istat) = G_const*rho0_wm(iglob)/Rg**3
+      w5(iglob,istat) = 3._CUSTOM_REAL*G_const*rho0_wm(iglob)/Rg**5
+    enddo
   enddo
 
   end subroutine gravity_init
@@ -326,43 +353,41 @@ contains
 
   subroutine gravity_timeseries()
 
-  use constants, only: GRAV
   use specfem_par, only: xstore, ystore, zstore, it, NGLOB_AB, GPU_MODE, Mesh_pointer
   use specfem_par_elastic, only: displ
 
   implicit none
 
   ! local parameters
-  real(kind=CUSTOM_REAL),parameter :: G_const = GRAV
-
   real(kind=CUSTOM_REAL), dimension(NGLOB_AB) :: accEdV,accNdV,accZdV
   real(kind=CUSTOM_REAL) :: E_local,N_local,Z_local,E_all,N_all,Z_all
-  real(kind=CUSTOM_REAL), dimension(:), allocatable :: Rg,dotP
+  real(kind=CUSTOM_REAL), dimension(:), allocatable :: dotP
   integer :: istat, it_grav, ier
 
   if (mod(it,ntimgap) == 0) then
     it_grav = nint(dble(it)/dble(ntimgap))
     if (GPU_MODE) call transfer_displ_from_device(NDIM*NGLOB_AB, displ, Mesh_pointer)
-    allocate(Rg(NGLOB_AB),stat=ier)
-    if (ier /= 0) call exit_MPI_without_rank('error allocating array 2241')
     allocate(dotP(NGLOB_AB),stat=ier)
     if (ier /= 0) call exit_MPI_without_rank('error allocating array 2242')
 
+    ! hot loop: multiply-add only (no sqrt/pow/divide per time step).
+    ! the geometric factors G*rho0_wm/Rg**3 and 3*G*rho0_wm/Rg**5 are precomputed
+    ! once in gravity_init as w3(:,istat)/w5(:,istat); only displ changes in time.
+    ! the (xstore-xstat) etc. subtractions are kept inline (cheap, and needed for dotP).
     do istat = 1,nstat
-      Rg = sqrt((xstore-xstat(istat))**2+(ystore-ystat(istat))**2+(zstore-zstat(istat))**2)
       dotP = (xstore-xstat(istat))*displ(1,:)+(ystore-ystat(istat))*displ(2,:)+(zstore-zstat(istat))*displ(3,:)
 
-      accEdV = G_const*rho0_wm/Rg**3*(displ(1,:)-3._CUSTOM_REAL*(dotP*(xstore-xstat(istat)))/Rg**2)
+      accEdV = w3(:,istat)*displ(1,:)-w5(:,istat)*(xstore-xstat(istat))*dotP
       E_local = sum(accEdV(:))
       call sum_all_all_cr(E_local,E_all)
       accE(it_grav,istat) = E_all
 
-      accNdV = G_const*rho0_wm/Rg**3*(displ(2,:)-3._CUSTOM_REAL*(dotP*(ystore-ystat(istat)))/Rg**2)
+      accNdV = w3(:,istat)*displ(2,:)-w5(:,istat)*(ystore-ystat(istat))*dotP
       N_local = sum(accNdV(:))
       call sum_all_all_cr(N_local,N_all)
       accN(it_grav,istat) = N_all
 
-      accZdV = G_const*rho0_wm/Rg**3*(displ(3,:)-3._CUSTOM_REAL*(dotP*(zstore-zstat(istat)))/Rg**2)
+      accZdV = w3(:,istat)*displ(3,:)-w5(:,istat)*(zstore-zstat(istat))*dotP
       Z_local = sum(accZdV(:))
       call sum_all_all_cr(Z_local,Z_all)
       accZ(it_grav,istat) = Z_all
