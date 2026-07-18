@@ -51,6 +51,7 @@ gpu_specfem3D_OBJECTS = \
 	$O/compute_stacey_viscoelastic_cuda.o \
 	$O/compute_strain_cuda.o \
 	$O/fault_solver_dynamics.o \
+	$O/gravity_cuda.o \
 	$O/helper_functions.o \
 	$O/initialize_gpu.o \
 	$O/lts_assembly_mpi_cuda.o \

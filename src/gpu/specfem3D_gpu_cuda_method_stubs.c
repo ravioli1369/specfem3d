@@ -424,6 +424,24 @@ void FC_FUNC_(fault_solver_gpu,
 
 
 //
+// src/gpu/gravity_cuda.cu
+//
+
+void FC_FUNC_(prepare_gravity_device,
+              PREPARE_GRAVITY_DEVICE)(long* Mesh_pointer,
+                                      realw* w3, realw* w5,
+                                      realw* xstore, realw* ystore, realw* zstore,
+                                      int* NGLOB_AB, int* nstat,
+                                      realw* xstat, realw* ystat, realw* zstat) {}
+
+void FC_FUNC_(compute_gravity_cuda,
+              COMPUTE_GRAVITY_CUDA)(long* Mesh_pointer,
+                                    realw* h_grav_E,
+                                    realw* h_grav_N,
+                                    realw* h_grav_Z) {}
+
+
+//
 // src/gpu/helper_functions.cu
 //
 

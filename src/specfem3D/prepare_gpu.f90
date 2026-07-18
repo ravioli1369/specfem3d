@@ -46,6 +46,8 @@
 
   use wavefield_discontinuity_solver, only: prepare_wavefield_discontinuity_GPU
 
+  use gravity_perturbation, only: GRAVITY_SIMULATION, gravity_init_device
+
   implicit none
 
   ! local parameters
@@ -249,6 +251,19 @@
     call prepare_fields_gravity_device(Mesh_pointer,GRAVITY, &
                                        minus_deriv_gravity,minus_g, &
                                        wgll_cube,rhostore)
+  endif
+
+  ! prepares Newtonian-noise gravity-perturbation weights on the device
+  ! (distinct from GRAVITY above: this is the gravity_stations output integral, gated on
+  !  GRAVITY_SIMULATION, i.e. DATA/gravity_stations present). uploads the Task-2 w3/w5
+  !  weights + node coordinates once so the per-output-step reduction runs on the GPU.
+  if (GRAVITY_SIMULATION) then
+    ! user output
+    if (myrank == 0) then
+      write(IMAIN,*) "  loading gravity-perturbation weights"
+      call flush_IMAIN()
+    endif
+    call gravity_init_device()
   endif
 
   ! prepares fault rupture simulation

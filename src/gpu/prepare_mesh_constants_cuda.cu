@@ -121,6 +121,10 @@ void FC_FUNC_(prepare_constants_device,
   // sets mesh pointer (for Fortran<->CUDA calls)
   *Mesh_pointer = (long)mp;
 
+  // no gravity-perturbation stations uploaded yet (set in prepare_gravity_device);
+  // guards the cleanup free of the d_grav_* arrays below.
+  mp->gravity_nstat = 0;
+
   // from here: routines will get mesh from pointer
   //            Mesh* mp = (Mesh*)(*Mesh_pointer);
 
@@ -2309,6 +2313,18 @@ TRACE("prepare_cleanup_device");
         gpuFree(mp->d_lts_interface_p_refine_boundary);
       }
     }
+  }
+
+  // Newtonian-noise gravity-perturbation arrays (allocated once in prepare_gravity_device)
+  if (mp->gravity_nstat > 0){
+    gpuFree(mp->d_grav_w3);
+    gpuFree(mp->d_grav_w5);
+    gpuFree(mp->d_grav_xstore);
+    gpuFree(mp->d_grav_ystore);
+    gpuFree(mp->d_grav_zstore);
+    free(mp->h_grav_xstat);
+    free(mp->h_grav_ystat);
+    free(mp->h_grav_zstat);
   }
 
   // releases previous contexts

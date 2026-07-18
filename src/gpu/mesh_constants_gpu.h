@@ -862,6 +862,23 @@ typedef struct mesh_ {
   int lts_max_nibool_interfaces_boundary;
 
   // ------------------------------------------------------------------ //
+  // Newtonian-noise gravity perturbation (see gravity_cuda.cu)
+  // ------------------------------------------------------------------ //
+  // number of gravity stations
+  int gravity_nstat;
+  // time-invariant per-node per-station weights, NGLOB_AB x nstat (column-major)
+  realw* d_grav_w3;
+  realw* d_grav_w5;
+  // node coordinates (constant in time)
+  realw* d_grav_xstore;
+  realw* d_grav_ystore;
+  realw* d_grav_zstore;
+  // station coordinates (small; kept on host, passed as scalar kernel args)
+  realw* h_grav_xstat;
+  realw* h_grav_ystat;
+  realw* h_grav_zstat;
+
+  // ------------------------------------------------------------------ //
   // optimizations
   // ------------------------------------------------------------------ //
   // CUDA-aware MPI flag

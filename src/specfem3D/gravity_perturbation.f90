@@ -54,7 +54,7 @@ module gravity_perturbation
 
   logical, save :: GRAVITY_SIMULATION = .false.
 
-  public :: gravity_init, gravity_timeseries, gravity_output, GRAVITY_SIMULATION
+  public :: gravity_init, gravity_init_device, gravity_timeseries, gravity_output, GRAVITY_SIMULATION
 
 contains
 
@@ -225,6 +225,30 @@ contains
 
 !=====================================================================
 
+  subroutine gravity_init_device()
+
+! uploads the time-invariant gravity integral data to the device once, so that
+! gravity_timeseries can run the whole per-output-step reduction on the GPU.
+! must be called after gravity_init has filled w3/w5/xstat/... AND after the GPU
+! mesh has been set up (Mesh_pointer valid), i.e. from prepare_GPU.
+
+  use specfem_par, only: NGLOB_AB, xstore, ystore, zstore, Mesh_pointer
+
+  implicit none
+
+  ! nothing to do if there are no gravity stations
+  if (.not. GRAVITY_SIMULATION) return
+
+  ! w3/w5 : NGLOB_AB x nstat time-invariant weights (already fold in G, rho0_wm, 1/Rg**3, 3/Rg**5)
+  ! xstore/ystore/zstore : node coordinates (constant in time)
+  ! xstat/ystat/zstat : station coordinates (kept on host inside the device struct)
+  call prepare_gravity_device(Mesh_pointer, w3, w5, xstore, ystore, zstore, &
+                              NGLOB_AB, nstat, xstat, ystat, zstat)
+
+  end subroutine gravity_init_device
+
+!=====================================================================
+
 ! recompute 3D jacobian at a given point for a 8-node element : modified from recompute_jacobian
 
   subroutine recompute_jacobian_gravity(xelm,yelm,zelm,xi,eta,gamma,jacobian)
@@ -359,39 +383,60 @@ contains
   implicit none
 
   ! local parameters
-  real(kind=CUSTOM_REAL), dimension(NGLOB_AB) :: accEdV,accNdV,accZdV
+  ! CPU-path node-sized scratch (only allocated on the non-GPU path)
+  real(kind=CUSTOM_REAL), dimension(:), allocatable :: accEdV,accNdV,accZdV
   real(kind=CUSTOM_REAL) :: E_local,N_local,Z_local,E_all,N_all,Z_all
   real(kind=CUSTOM_REAL), dimension(:), allocatable :: dotP
+  ! per-station partial (this-rank) gravity-perturbation sums returned by the device reduction
+  real(kind=CUSTOM_REAL), dimension(nstat) :: grav_E,grav_N,grav_Z
   integer :: istat, it_grav, ier
 
   if (mod(it,ntimgap) == 0) then
     it_grav = nint(dble(it)/dble(ntimgap))
-    if (GPU_MODE) call transfer_displ_from_device(NDIM*NGLOB_AB, displ, Mesh_pointer)
-    allocate(dotP(NGLOB_AB),stat=ier)
-    if (ier /= 0) call exit_MPI_without_rank('error allocating array 2242')
 
-    ! hot loop: multiply-add only (no sqrt/pow/divide per time step).
-    ! the geometric factors G*rho0_wm/Rg**3 and 3*G*rho0_wm/Rg**5 are precomputed
-    ! once in gravity_init as w3(:,istat)/w5(:,istat); only displ changes in time.
-    ! the (xstore-xstat) etc. subtractions are kept inline (cheap, and needed for dotP).
-    do istat = 1,nstat
-      dotP = (xstore-xstat(istat))*displ(1,:)+(ystore-ystat(istat))*displ(2,:)+(zstore-zstat(istat))*displ(3,:)
+    if (GPU_MODE) then
+      ! GPU path: reduce over d_displ on the device using the precomputed w3/w5 weights.
+      ! this avoids transferring the full displacement field (NDIM*NGLOB_AB reals) back to
+      ! the host each output step; only the nstat per-station scalars come back.
+      ! grav_E/grav_N/grav_Z hold this rank's partial sums (double-accumulated on the device,
+      ! returned as CUSTOM_REAL) before the MPI reduction below.
+      call compute_gravity_cuda(Mesh_pointer, grav_E, grav_N, grav_Z)
+      do istat = 1,nstat
+        call sum_all_all_cr(grav_E(istat),E_all)
+        accE(it_grav,istat) = E_all
+        call sum_all_all_cr(grav_N(istat),N_all)
+        accN(it_grav,istat) = N_all
+        call sum_all_all_cr(grav_Z(istat),Z_all)
+        accZ(it_grav,istat) = Z_all
+      enddo
+    else
+      ! CPU path (unchanged from Task 2)
+      allocate(dotP(NGLOB_AB),accEdV(NGLOB_AB),accNdV(NGLOB_AB),accZdV(NGLOB_AB),stat=ier)
+      if (ier /= 0) call exit_MPI_without_rank('error allocating array 2242')
 
-      accEdV = w3(:,istat)*displ(1,:)-w5(:,istat)*(xstore-xstat(istat))*dotP
-      E_local = sum(accEdV(:))
-      call sum_all_all_cr(E_local,E_all)
-      accE(it_grav,istat) = E_all
+      ! hot loop: multiply-add only (no sqrt/pow/divide per time step).
+      ! the geometric factors G*rho0_wm/Rg**3 and 3*G*rho0_wm/Rg**5 are precomputed
+      ! once in gravity_init as w3(:,istat)/w5(:,istat); only displ changes in time.
+      ! the (xstore-xstat) etc. subtractions are kept inline (cheap, and needed for dotP).
+      do istat = 1,nstat
+        dotP = (xstore-xstat(istat))*displ(1,:)+(ystore-ystat(istat))*displ(2,:)+(zstore-zstat(istat))*displ(3,:)
 
-      accNdV = w3(:,istat)*displ(2,:)-w5(:,istat)*(ystore-ystat(istat))*dotP
-      N_local = sum(accNdV(:))
-      call sum_all_all_cr(N_local,N_all)
-      accN(it_grav,istat) = N_all
+        accEdV = w3(:,istat)*displ(1,:)-w5(:,istat)*(xstore-xstat(istat))*dotP
+        E_local = sum(accEdV(:))
+        call sum_all_all_cr(E_local,E_all)
+        accE(it_grav,istat) = E_all
 
-      accZdV = w3(:,istat)*displ(3,:)-w5(:,istat)*(zstore-zstat(istat))*dotP
-      Z_local = sum(accZdV(:))
-      call sum_all_all_cr(Z_local,Z_all)
-      accZ(it_grav,istat) = Z_all
-    enddo
+        accNdV = w3(:,istat)*displ(2,:)-w5(:,istat)*(ystore-ystat(istat))*dotP
+        N_local = sum(accNdV(:))
+        call sum_all_all_cr(N_local,N_all)
+        accN(it_grav,istat) = N_all
+
+        accZdV = w3(:,istat)*displ(3,:)-w5(:,istat)*(zstore-zstat(istat))*dotP
+        Z_local = sum(accZdV(:))
+        call sum_all_all_cr(Z_local,Z_all)
+        accZ(it_grav,istat) = Z_all
+      enddo
+    endif
   endif
 
   end subroutine gravity_timeseries
