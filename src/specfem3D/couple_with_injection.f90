@@ -2956,6 +2956,9 @@ contains
     offset_proc = sum(nb_points_local_per_proc(0:myrank-1))
   endif
 
+  ! dump boundary-point coords/normals in ipt order (for building an analytic solution file)
+  call dump_injection_boundary_points()
+
   ! read full wavefield solution
   filename = trim(TRACTION_PATH) // '/' // 'specfem_coupling_solution.bin'
 
@@ -3261,6 +3264,66 @@ contains
   endif
 
   end subroutine couple_with_injection_prepare_specfem_files
+
+!
+!-------------------------------------------------------------------------------------------------
+!
+
+  subroutine dump_injection_boundary_points()
+
+! Writes injection boundary GLL points (coords + outward normal) in the same ipt
+! order (iface, igll) that read_specfem_file indexes Veloc_specfem/Tract_specfem,
+! so an external tool can build specfem_coupling_solution.bin for a custom
+! (e.g. Rayleigh eigenfunction) incident wavefield. One text file per rank.
+
+  use constants, only: myrank,MAX_STRING_LEN,NGLLSQUARE,IMAIN,IOUT
+  use shared_parameters, only: TRACTION_PATH
+  use specfem_par, only: ibool,xstore,ystore,zstore, &
+                         abs_boundary_ijk,abs_boundary_normal,abs_boundary_ispec, &
+                         num_abs_boundary_faces
+
+  implicit none
+
+  character(len=MAX_STRING_LEN) :: prname_trac,filename
+  integer :: iface,igll,i,j,k,ispec,iglob,ipt,ier
+
+  call create_name_database(prname_trac,myrank,TRACTION_PATH)
+  filename = trim(prname_trac) // 'injection_points.txt'
+
+  open(unit=IOUT,file=trim(filename),status='unknown',action='write',iostat=ier)
+  if (ier /= 0) then
+    print *,'Error: could not open injection points file ',trim(filename)
+    stop 'Error opening injection_points.txt'
+  endif
+
+  ! header: npt, nfaces, ngll-per-face ; then per point: ipt x y z nx ny nz
+  write(IOUT,*) num_abs_boundary_faces*NGLLSQUARE, num_abs_boundary_faces, NGLLSQUARE
+
+  ipt = 0
+  do iface = 1,num_abs_boundary_faces
+    ispec = abs_boundary_ispec(iface)
+    do igll = 1,NGLLSQUARE
+      i = abs_boundary_ijk(1,igll,iface)
+      j = abs_boundary_ijk(2,igll,iface)
+      k = abs_boundary_ijk(3,igll,iface)
+      iglob = ibool(i,j,k,ispec)
+      ipt = ipt + 1
+      write(IOUT,'(I10,6(1x,ES22.14))') ipt, &
+            xstore(iglob), ystore(iglob), zstore(iglob), &
+            abs_boundary_normal(1,igll,iface), &
+            abs_boundary_normal(2,igll,iface), &
+            abs_boundary_normal(3,igll,iface)
+    enddo
+  enddo
+
+  close(IOUT)
+
+  if (myrank == 0) then
+    write(IMAIN,*) '  injection: dumped ',ipt,' boundary points to ',trim(filename)
+    call flush_IMAIN()
+  endif
+
+  end subroutine dump_injection_boundary_points
 
 !
 !-------------------------------------------------------------------------------------------------
