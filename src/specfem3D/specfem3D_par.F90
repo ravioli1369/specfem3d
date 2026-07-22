@@ -772,6 +772,12 @@ module specfem_par_coupling
   ! normal
   real(kind=CUSTOM_REAL),dimension(:),allocatable  :: nmx,nmy,nmz
 
+  ! Rayleigh runtime injection (type 5)
+  integer :: ray_ndepth = 0
+  real(kind=CUSTOM_REAL) :: ray_f0,ray_cR,ray_phi,ray_amp,ray_gamma,ray_delay,ray_zsurf
+  real(kind=CUSTOM_REAL),dimension(:),allocatable :: ray_depth,ray_U,ray_V,ray_sxx,ray_syy,ray_szz,ray_sxz
+  real(kind=CUSTOM_REAL),dimension(:),allocatable :: ray_bx,ray_by,ray_bz,ray_bnx,ray_bny,ray_bnz
+
   ! specfem coupling
   !
   ! for saving wavefield solution on coupling boundary points (in coarse simulation)

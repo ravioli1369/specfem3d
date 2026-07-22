@@ -87,6 +87,8 @@
         write(IMAIN,*) 'type of injection technique is FK'
       case (INJECTION_TECHNIQUE_IS_SPECFEM)
         write(IMAIN,*) 'type of injection technique is SPECFEM'
+      case (INJECTION_TECHNIQUE_IS_RAYLEIGH)
+        write(IMAIN,*) 'type of injection technique is RAYLEIGH'
       case default
         stop 'Invalid INJECTION_TECHNIQUE_TYPE chosen, must be 1 == DSM, 2 == AXISEM, 3 == FK or 4 == SPECFEM'
       end select
@@ -188,6 +190,14 @@
     case (INJECTION_TECHNIQUE_IS_SPECFEM)
       ! SPECFEM coupling
       ! will do main setup in prepare stage when calling routine couple_with_injection_prepare_specfem_files()
+
+    case (INJECTION_TECHNIQUE_IS_RAYLEIGH)
+      ! Rayleigh runtime injection: boundary velocity/traction filled per time step
+      allocate(Veloc_specfem(3,NGLLSQUARE*num_abs_boundary_faces),stat=ier)
+      if (ier /= 0) call exit_MPI_without_rank('error allocating Veloc_specfem (Rayleigh)')
+      allocate(Tract_specfem(3,NGLLSQUARE*num_abs_boundary_faces),stat=ier)
+      if (ier /= 0) call exit_MPI_without_rank('error allocating Tract_specfem (Rayleigh)')
+      Veloc_specfem(:,:) = 0._CUSTOM_REAL; Tract_specfem(:,:) = 0._CUSTOM_REAL
     end select
 
   else
@@ -485,6 +495,11 @@
     deallocate(alpha_FK, beta_FK, rho_FK, mu_FK, h_FK)
 
     ! * end of initial setup for future FK3D calculations *
+
+    case (INJECTION_TECHNIQUE_IS_RAYLEIGH)
+      ! Rayleigh runtime injection setup
+      call enumerate_rayleigh_boundary()
+      call ReadRayleighModelInput()
 
     case (INJECTION_TECHNIQUE_IS_SPECFEM)
       ! SPECFEM coupling
@@ -4185,6 +4200,11 @@ contains
   case (INJECTION_TECHNIQUE_IS_FK)
     deallocate(Veloc_FK,Tract_FK)
 
+  case (INJECTION_TECHNIQUE_IS_RAYLEIGH)
+    if (allocated(Veloc_specfem)) deallocate(Veloc_specfem,Tract_specfem)
+    if (allocated(ray_bx)) deallocate(ray_bx,ray_by,ray_bz,ray_bnx,ray_bny,ray_bnz)
+    if (allocated(ray_depth)) deallocate(ray_depth,ray_U,ray_V,ray_sxx,ray_syy,ray_szz,ray_sxz)
+
   case (INJECTION_TECHNIQUE_IS_SPECFEM)
     deallocate(Veloc_specfem,Tract_specfem)
     close(IIN_veloc_dsm)
@@ -4249,6 +4269,10 @@ contains
   case (INJECTION_TECHNIQUE_IS_SPECFEM)
     ! SPECFEM coupling
     call read_specfem_file(Veloc_specfem,Tract_specfem,num_abs_boundary_faces*NGLLSQUARE,it)
+
+  case (INJECTION_TECHNIQUE_IS_RAYLEIGH)
+    ! Rayleigh runtime injection: compute the boundary field at this step
+    call compute_rayleigh_field(Veloc_specfem,Tract_specfem,num_abs_boundary_faces*NGLLSQUARE,it)
   end select
 
   ! return for cpu mode
@@ -4274,8 +4298,8 @@ contains
     !! CD CD add this
     if (RECIPROCITY_AND_KH_INTEGRAL) Tract_axisem_time(:,:,it) = Tract_axisem(:,:)
 
-  case (INJECTION_TECHNIQUE_IS_SPECFEM)
-    ! SPECFEM coupling
+  case (INJECTION_TECHNIQUE_IS_SPECFEM, INJECTION_TECHNIQUE_IS_RAYLEIGH)
+    ! SPECFEM / Rayleigh coupling
     veloc_inj(:,:) = Veloc_specfem(:,:)
     tract_inj(:,:) = Tract_specfem(:,:)
 
@@ -4409,3 +4433,189 @@ contains
 
   end subroutine read_specfem_file
 
+
+
+!
+!-------------------------------------------------------------------------------------------------
+!
+
+  subroutine enumerate_rayleigh_boundary()
+
+! Boundary GLL point coords + outward normals in the same ipt order the injection
+! indexes Veloc_specfem/Tract_specfem (iface, igll), for the type-5 Rayleigh runtime eval.
+
+  use constants, only: CUSTOM_REAL,NGLLSQUARE
+  use specfem_par, only: ibool,xstore,ystore,zstore, &
+                         abs_boundary_ijk,abs_boundary_normal,abs_boundary_ispec, &
+                         num_abs_boundary_faces
+  use specfem_par_coupling, only: ray_bx,ray_by,ray_bz,ray_bnx,ray_bny,ray_bnz
+
+  implicit none
+  integer :: iface,igll,i,j,k,ispec,iglob,ipt,ier,nb
+
+  nb = num_abs_boundary_faces*NGLLSQUARE
+  if (allocated(ray_bx)) deallocate(ray_bx,ray_by,ray_bz,ray_bnx,ray_bny,ray_bnz)
+  allocate(ray_bx(nb),ray_by(nb),ray_bz(nb),ray_bnx(nb),ray_bny(nb),ray_bnz(nb),stat=ier)
+  if (ier /= 0) stop 'error allocating ray boundary arrays'
+
+  ipt = 0
+  do iface = 1,num_abs_boundary_faces
+    ispec = abs_boundary_ispec(iface)
+    do igll = 1,NGLLSQUARE
+      i = abs_boundary_ijk(1,igll,iface)
+      j = abs_boundary_ijk(2,igll,iface)
+      k = abs_boundary_ijk(3,igll,iface)
+      iglob = ibool(i,j,k,ispec)
+      ipt = ipt + 1
+      ray_bx(ipt) = xstore(iglob)
+      ray_by(ipt) = ystore(iglob)
+      ray_bz(ipt) = zstore(iglob)
+      ray_bnx(ipt) = abs_boundary_normal(1,igll,iface)
+      ray_bny(ipt) = abs_boundary_normal(2,igll,iface)
+      ray_bnz(ipt) = abs_boundary_normal(3,igll,iface)
+    enddo
+  enddo
+
+  end subroutine enumerate_rayleigh_boundary
+
+!
+!-------------------------------------------------------------------------------------------------
+!
+
+  subroutine ReadRayleighModelInput()
+
+! Reads the RAYLEIGH_MODEL file (named by the FKMODEL_FILE Par_file entry): one
+! parameter line then ray_ndepth eigenfunction-table rows.
+
+  use constants, only: myrank,IMAIN,IIN
+  use shared_parameters, only: FKMODEL_FILE
+  use specfem_par_coupling
+
+  implicit none
+  integer :: i,ier
+
+  open(unit=IIN,file=trim(FKMODEL_FILE),status='old',action='read',iostat=ier)
+  if (ier /= 0) then
+    print *,'Error: could not open RAYLEIGH_MODEL file ',trim(FKMODEL_FILE)
+    stop 'Error opening RAYLEIGH_MODEL'
+  endif
+  read(IIN,*) ray_f0,ray_cR,ray_phi,ray_amp,ray_gamma,ray_delay,ray_zsurf,ray_ndepth
+  if (allocated(ray_depth)) deallocate(ray_depth,ray_U,ray_V,ray_sxx,ray_syy,ray_szz,ray_sxz)
+  allocate(ray_depth(ray_ndepth),ray_U(ray_ndepth),ray_V(ray_ndepth), &
+           ray_sxx(ray_ndepth),ray_syy(ray_ndepth),ray_szz(ray_ndepth),ray_sxz(ray_ndepth),stat=ier)
+  if (ier /= 0) stop 'error allocating ray eigenfunction table'
+  do i = 1,ray_ndepth
+    read(IIN,*) ray_depth(i),ray_U(i),ray_V(i),ray_sxx(i),ray_syy(i),ray_szz(i),ray_sxz(i)
+  enddo
+  close(IIN)
+
+  if (myrank == 0) then
+    write(IMAIN,*) '  Rayleigh injection: f0=',ray_f0,' c_R=',ray_cR,' azimuth(rad)=',ray_phi
+    write(IMAIN,*) '  Rayleigh injection: eigenfunction table rows =',ray_ndepth
+    call flush_IMAIN()
+  endif
+
+  end subroutine ReadRayleighModelInput
+
+!
+!-------------------------------------------------------------------------------------------------
+!
+
+  subroutine interp_ray_table(d,Um,Vm,sxx,syy,szz,sxz)
+
+! Linear interpolation of the (uniform-depth) Rayleigh eigenfunction table; 0 beyond
+! the deepest sample (the mode has decayed).
+
+  use constants, only: CUSTOM_REAL
+  use specfem_par_coupling, only: ray_ndepth,ray_depth,ray_U,ray_V,ray_sxx,ray_syy,ray_szz,ray_sxz
+
+  implicit none
+  real(kind=CUSTOM_REAL),intent(in) :: d
+  real(kind=CUSTOM_REAL),intent(out) :: Um,Vm,sxx,syy,szz,sxz
+  integer :: i0
+  real(kind=CUSTOM_REAL) :: ddz,f
+
+  if (d <= ray_depth(1)) then
+    Um=ray_U(1); Vm=ray_V(1); sxx=ray_sxx(1); syy=ray_syy(1); szz=ray_szz(1); sxz=ray_sxz(1)
+    return
+  endif
+  if (d >= ray_depth(ray_ndepth)) then
+    Um=0._CUSTOM_REAL; Vm=0._CUSTOM_REAL; sxx=0._CUSTOM_REAL; syy=0._CUSTOM_REAL
+    szz=0._CUSTOM_REAL; sxz=0._CUSTOM_REAL
+    return
+  endif
+  ddz = ray_depth(2)-ray_depth(1)
+  i0 = int(d/ddz)+1
+  if (i0 < 1) i0 = 1
+  if (i0 >= ray_ndepth) i0 = ray_ndepth-1
+  f = (d-ray_depth(i0))/ddz
+  Um  = ray_U(i0)*(1._CUSTOM_REAL-f)+ray_U(i0+1)*f
+  Vm  = ray_V(i0)*(1._CUSTOM_REAL-f)+ray_V(i0+1)*f
+  sxx = ray_sxx(i0)*(1._CUSTOM_REAL-f)+ray_sxx(i0+1)*f
+  syy = ray_syy(i0)*(1._CUSTOM_REAL-f)+ray_syy(i0+1)*f
+  szz = ray_szz(i0)*(1._CUSTOM_REAL-f)+ray_szz(i0+1)*f
+  sxz = ray_sxz(i0)*(1._CUSTOM_REAL-f)+ray_sxz(i0+1)*f
+
+  end subroutine interp_ray_table
+
+!
+!-------------------------------------------------------------------------------------------------
+!
+
+  subroutine compute_rayleigh_field(V,T,nb,it)
+
+! Analytic plane-Rayleigh boundary velocity + traction at simulation step `it`
+! (t = (it-1)*deltat - t0). Displacement u_z = A U(z) s(tau), u_xi = A V(z) q(tau),
+! tau = t - xi/c_R - delay, with a narrowband Gabor s and its analytic quadrature q
+! (env*sin) -- no Hilbert or FFT needed. Stress (xi,eta,z) is rotated to Cartesian by
+! the azimuth phi and dotted with the outward normal.
+
+  use constants, only: CUSTOM_REAL,NDIM,PI
+  use specfem_par, only: deltat,t0
+  use specfem_par_coupling
+
+  implicit none
+  integer,intent(in) :: nb,it
+  real(kind=CUSTOM_REAL),intent(out) :: V(NDIM,nb),T(NDIM,nb)
+  integer :: ipt
+  real(kind=CUSTOM_REAL) :: cphi,sphi,xi,depth,tnow,tau,om,arg,env,s,q,sp,qp,w1
+  real(kind=CUSTOM_REAL) :: Um,Vm,sxx,syy,szz,sxz
+  real(kind=CUSTOM_REAL) :: sigxx,sigyy,sigzz,sigxz,sigxy,sigyz,vxi,vz
+
+  cphi = cos(ray_phi); sphi = sin(ray_phi)
+  om = 2.0_CUSTOM_REAL*PI*ray_f0
+  tnow = real(it-1,kind=CUSTOM_REAL)*deltat - t0
+
+  do ipt = 1,nb
+    xi = ray_bx(ipt)*cphi + ray_by(ipt)*sphi
+    depth = ray_zsurf - ray_bz(ipt)
+    call interp_ray_table(depth,Um,Vm,sxx,syy,szz,sxz)
+
+    tau = tnow - xi/ray_cR - ray_delay
+    arg = om*tau
+    env = exp(-0.5_CUSTOM_REAL*(arg/ray_gamma)**2)
+    s = env*cos(arg)
+    q = env*sin(arg)
+    w1 = -om*arg/(ray_gamma**2)
+    sp = env*(w1*cos(arg) - om*sin(arg))
+    qp = env*(w1*sin(arg) + om*cos(arg))
+
+    vxi = ray_amp*Vm*qp
+    vz  = ray_amp*Um*sp
+    V(1,ipt) = vxi*cphi
+    V(2,ipt) = vxi*sphi
+    V(3,ipt) = vz
+
+    sigxx = ray_amp*(sxx*cphi*cphi + syy*sphi*sphi)*s
+    sigyy = ray_amp*(sxx*sphi*sphi + syy*cphi*cphi)*s
+    sigxy = ray_amp*((sxx-syy)*sphi*cphi)*s
+    sigzz = ray_amp*szz*s
+    sigxz = ray_amp*(sxz*cphi)*q
+    sigyz = ray_amp*(sxz*sphi)*q
+
+    T(1,ipt) = sigxx*ray_bnx(ipt) + sigxy*ray_bny(ipt) + sigxz*ray_bnz(ipt)
+    T(2,ipt) = sigxy*ray_bnx(ipt) + sigyy*ray_bny(ipt) + sigyz*ray_bnz(ipt)
+    T(3,ipt) = sigxz*ray_bnx(ipt) + sigyz*ray_bny(ipt) + sigzz*ray_bnz(ipt)
+  enddo
+
+  end subroutine compute_rayleigh_field
