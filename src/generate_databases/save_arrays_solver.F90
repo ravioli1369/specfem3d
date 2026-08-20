@@ -926,7 +926,8 @@
   subroutine save_arrays_solver_injection_boundary()
 
   use constants, only: myrank,NGLLSQUARE,IMAIN,IOUT,itag, &
-    INJECTION_TECHNIQUE_IS_AXISEM,INJECTION_TECHNIQUE_IS_DSM,INJECTION_TECHNIQUE_IS_FK,INJECTION_TECHNIQUE_IS_SPECFEM
+    INJECTION_TECHNIQUE_IS_AXISEM,INJECTION_TECHNIQUE_IS_DSM,INJECTION_TECHNIQUE_IS_FK, &
+    INJECTION_TECHNIQUE_IS_SPECFEM,INJECTION_TECHNIQUE_IS_RAYLEIGH
 
   use shared_parameters, only: COUPLE_WITH_INJECTION_TECHNIQUE,MESH_A_CHUNK_OF_THE_EARTH, &
     INJECTION_TECHNIQUE_TYPE,TRACTION_PATH,NPROC
@@ -965,6 +966,8 @@
       write(IMAIN,*) '       injection technique type is FK'
     case (INJECTION_TECHNIQUE_IS_SPECFEM)
       write(IMAIN,*) '       injection technique type is SPECFEM'
+    case (INJECTION_TECHNIQUE_IS_RAYLEIGH)
+      write(IMAIN,*) '       injection technique type is RAYLEIGH'
     case default
       write(IMAIN,*) '       injection technique not recognized'
       stop 'Invalid injection technique type'
