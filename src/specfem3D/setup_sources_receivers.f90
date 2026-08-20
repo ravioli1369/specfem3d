@@ -1905,8 +1905,12 @@
     enddo ! NSOURCES
   endif
 
-  ! receivers
-  do irec = 1,nrec
+  ! receivers -- sr.vtk receiver points DISABLED (do irec = 1,0). This diagnostic-only VTK
+  ! write dereferences the host ystore/zstore mesh-coordinate arrays, which are freed after
+  ! the GPU transfer under GPU_MODE, so it segfaults on the GPU build (xstore happens to stay
+  ! mapped, ystore does not -> crash at get_shape3D.f90 yelm line). Seismograms are computed
+  ! on the GPU and are unaffected; only the sr.vtk visualization loses receiver markers.
+  do irec = 1,0
     ispec = ispec_selected_rec(irec)
 
     ! find the coordinates of the anchor (eight corners for NGNOD=8) nodes of the element
