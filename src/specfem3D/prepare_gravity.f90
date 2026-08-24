@@ -51,6 +51,9 @@
   integer :: iglob,ier
   ! debugging
   character(len=MAX_STRING_LEN) :: filename
+  ! PREP_TIMING: split gravity_init (NN mass weights) from the PREM self-gravitation setup
+  double precision :: t_grav
+  double precision, external :: wtime
 
   ! user output
   if (myrank == 0) then
@@ -60,7 +63,13 @@
 
   ! for gravity perturbation calculations
   ! sets up arrays for gravity field
+  t_grav = wtime()
   call gravity_init()
+  if (myrank == 0) then
+    write(IMAIN,*) 'PREP_TIMING gravity_init = ',wtime()-t_grav
+    call flush_IMAIN()
+    t_grav = wtime()
+  endif
 
   ! store g, rho and dg/dr=dg using normalized radius in lookup table every 100 m
   ! get density and velocity from PREM model using dummy doubling flag
@@ -214,6 +223,11 @@
       call flush_IMAIN()
     endif
     call compute_gravity_integrals()
+  endif
+
+  if (myrank == 0) then
+    write(IMAIN,*) 'PREP_TIMING gravity_prem = ',wtime()-t_grav
+    call flush_IMAIN()
   endif
 
   ! synchonizes

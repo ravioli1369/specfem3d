@@ -69,7 +69,8 @@ contains
        xstore, ystore, zstore, &
        xigll, yigll, zigll, &
        wxgll, wygll, wzgll, &
-       NGNOD, ibool, GPU_MODE
+       NGNOD, ibool, GPU_MODE, &
+       jacobianstore, irregular_element_number, jacobian_regular
 
   implicit none
 
@@ -79,6 +80,9 @@ contains
   ! per-node station distance used only while precomputing the time-invariant weights
   real(kind=CUSTOM_REAL) :: Rg
   real(kind=CUSTOM_REAL), dimension(NGLLX,NGLLY,NGLLZ):: rho_elem
+  ! jacobian at the current GLL point, taken from the mesher's stored values (see loop below)
+  real(kind=CUSTOM_REAL) :: jacobianl
+  integer :: ispec_irreg
   double precision :: Jac3D
   ! coordinates of the control points
   double precision :: xelm(NGNOD),yelm(NGNOD),zelm(NGNOD)
@@ -181,20 +185,22 @@ contains
   do ispec = 1,NSPEC_AB
 
     rho_elem = rhostore(:,:,:,ispec)
-
-    do ia = 1,NGNOD
-      iglob = ibool(iax(ia),iay(ia),iaz(ia),ispec)
-      xelm(ia) = dble(xstore(iglob))
-      yelm(ia) = dble(ystore(iglob))
-      zelm(ia) = dble(zstore(iglob))
-    enddo
+    ! rho0_wm(iglob) = sum over elements of rho * jacobian * GLL weight at each node -- exactly
+    ! the (un-inverted, pre-Stacey) elastic mass matrix. Reuse the jacobian the mesher already
+    ! stored (jacobianstore for deformed/irregular elements, the constant jacobian_regular
+    ! otherwise) instead of recomputing it per GLL point via recompute_jacobian_gravity. That
+    ! per-node double-precision recompute dominated the ~20 min "preparing gravity" setup on the
+    ! 3.4M-element fine box; this mirrors define_mass_matrices_elastic, so rho0_wm is unchanged.
+    ispec_irreg = irregular_element_number(ispec)
+    if (ispec_irreg == 0) jacobianl = jacobian_regular
 
     do k = 1,NGLLZ
       do j = 1,NGLLY
         do i = 1,NGLLX
           iglob = ibool(i,j,k,ispec)
-          call recompute_jacobian_gravity(xelm,yelm,zelm,xigll(i),yigll(j),zigll(k),Jac3D)
-          rho0_wm(iglob) = rho0_wm(iglob) + Jac3D * wxgll(i) * wygll(j) * wzgll(k) * rho_elem(i,j,k)
+          if (ispec_irreg /= 0) jacobianl = jacobianstore(i,j,k,ispec_irreg)
+          rho0_wm(iglob) = rho0_wm(iglob) &
+               + real(dble(jacobianl) * wxgll(i)*wygll(j)*wzgll(k) * dble(rho_elem(i,j,k)), kind=CUSTOM_REAL)
         enddo
       enddo
     enddo

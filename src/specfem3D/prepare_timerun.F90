@@ -41,6 +41,7 @@
 
   ! local parameters
   double precision :: tCPU,tstart
+  double precision :: tprev
   double precision, external :: wtime
 
   ! checks if anything to do
@@ -55,14 +56,20 @@
   ! user output infos
   call prepare_timerun_user_output()
 
+  ! --- PREP_TIMING: per-phase wall-clock instrumentation (rank 0) to locate the setup cost ---
+  tprev = wtime()
+
   ! sets up mass matrices
   call prepare_timerun_mass_matrices()
+  if (myrank == 0) then; write(IMAIN,*) 'PREP_TIMING mass_matrices = ',wtime()-tprev; call flush_IMAIN(); tprev = wtime(); endif
 
   ! sets up time increments
   call prepare_timerun_constants()
+  if (myrank == 0) then; write(IMAIN,*) 'PREP_TIMING constants = ',wtime()-tprev; call flush_IMAIN(); tprev = wtime(); endif
 
   ! initializes arrays
   call prepare_wavefields()
+  if (myrank == 0) then; write(IMAIN,*) 'PREP_TIMING wavefields = ',wtime()-tprev; call flush_IMAIN(); tprev = wtime(); endif
 
   ! initializes fault rupture arrays
   call prepare_timerun_faults()
@@ -72,6 +79,7 @@
 
   ! prepares gravity arrays
   call prepare_gravity()
+  if (myrank == 0) then; write(IMAIN,*) 'PREP_TIMING gravity = ',wtime()-tprev; call flush_IMAIN(); tprev = wtime(); endif
 
   ! prepares LDDRK time scheme
   ! note: do not use if (USE_LDDRK) call prepare_timerun_lddrk()
@@ -84,6 +92,7 @@
 
   ! Stacey boundaries
   call prepare_timerun_stacey()
+  if (myrank == 0) then; write(IMAIN,*) 'PREP_TIMING stacey = ',wtime()-tprev; call flush_IMAIN(); tprev = wtime(); endif
 
   ! wavefield discontinuity
   call prepare_timerun_wavefield_discontinuity()
@@ -96,12 +105,15 @@
 
   ! prepares coupling with injection boundary
   call couple_with_injection_prepare_boundary()
+  if (myrank == 0) then; write(IMAIN,*) 'PREP_TIMING couple_injection = ',wtime()-tprev; call flush_IMAIN(); tprev = wtime(); endif
 
   ! prepares GPU arrays
   if (GPU_MODE) call prepare_GPU()
+  if (myrank == 0) then; write(IMAIN,*) 'PREP_TIMING prepare_GPU = ',wtime()-tprev; call flush_IMAIN(); tprev = wtime(); endif
 
   ! optimizes array memory layout for better performance
   call prepare_optimized_arrays()
+  if (myrank == 0) then; write(IMAIN,*) 'PREP_TIMING optimized_arrays = ',wtime()-tprev; call flush_IMAIN(); tprev = wtime(); endif
 
   ! synchronize all the processes
   call synchronize_all()
