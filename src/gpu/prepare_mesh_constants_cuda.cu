@@ -2317,8 +2317,7 @@ TRACE("prepare_cleanup_device");
 
   // Newtonian-noise gravity-perturbation arrays (allocated once in prepare_gravity_device)
   if (mp->gravity_nstat > 0){
-    gpuFree(mp->d_grav_w3);
-    gpuFree(mp->d_grav_w5);
+    gpuFree(mp->d_grav_mass);
     gpuFree(mp->d_grav_xstore);
     gpuFree(mp->d_grav_ystore);
     gpuFree(mp->d_grav_zstore);

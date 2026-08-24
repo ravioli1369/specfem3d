@@ -866,9 +866,14 @@ typedef struct mesh_ {
   // ------------------------------------------------------------------ //
   // number of gravity stations
   int gravity_nstat;
-  // time-invariant per-node per-station weights, NGLOB_AB x nstat (column-major)
-  realw* d_grav_w3;
-  realw* d_grav_w5;
+  // time-invariant per-node mass-integration weight rho0_wm (station-independent), NGLOB_AB.
+  // w3 = G*rho0_wm/Rg^3 and w5 = 3*G*rho0_wm/Rg^5 are recomputed per output step in the
+  // reduction kernel from this array plus the node/station coordinates. This trades a few
+  // flops on a kernel that only runs every ntimgap steps for ~6 GB less VRAM than storing
+  // w3/w5 as two NGLOB_AB x nstat arrays (lets the fine box fit 40 GB GPUs).
+  realw* d_grav_mass;
+  // gravitational constant, folded with rho0_wm and 1/Rg^n in the kernel
+  realw grav_G;
   // node coordinates (constant in time)
   realw* d_grav_xstore;
   realw* d_grav_ystore;

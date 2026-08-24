@@ -51,8 +51,8 @@
 // the per-node term is formed in realw (as on the CPU) and only the accumulation is double.
 
 __global__ void gravity_reduction_kernel(realw* d_displ,
-                                         realw* d_grav_w3_col,
-                                         realw* d_grav_w5_col,
+                                         realw* d_grav_mass,
+                                         realw grav_G,
                                          realw* d_grav_xstore,
                                          realw* d_grav_ystore,
                                          realw* d_grav_zstore,
@@ -87,8 +87,16 @@ __global__ void gravity_reduction_kernel(realw* d_displ,
 
     realw dotP = dx*u1 + dy*u2 + dz*u3;
 
-    realw w3 = d_grav_w3_col[i];
-    realw w5 = d_grav_w5_col[i];
+    // recompute the time-invariant weights from the station-independent mass term:
+    // w3 = G*rho0_wm/Rg^3, w5 = 3*G*rho0_wm/Rg^5 (mirrors gravity_init, single precision).
+    // d_grav_mass holds rho0_wm; grav_G folds in the gravitational constant. Division (not
+    // rsqrtf) matches the host precompute; this kernel only runs every ntimgap steps.
+    realw Rg2 = dx*dx + dy*dy + dz*dz;
+    realw Rg  = sqrtf(Rg2);
+    realw Rg3 = Rg*Rg2;
+    realw gm  = grav_G * d_grav_mass[i];
+    realw w3  = gm / Rg3;
+    realw w5  = 3.0f*gm / (Rg3*Rg2);
 
     eE = (double)(w3*u1 - w5*dx*dotP);
     eN = (double)(w3*u2 - w5*dy*dotP);
@@ -128,7 +136,7 @@ __global__ void gravity_reduction_kernel(realw* d_displ,
 extern EXTERN_LANG
 void FC_FUNC_(prepare_gravity_device,
               PREPARE_GRAVITY_DEVICE)(long* Mesh_pointer,
-                                      realw* w3, realw* w5,
+                                      realw* rho0_wm, realw* G,
                                       realw* xstore, realw* ystore, realw* zstore,
                                       int* NGLOB_AB, int* nstat,
                                       realw* xstat, realw* ystat, realw* zstat) {
@@ -141,6 +149,7 @@ void FC_FUNC_(prepare_gravity_device,
   int ns = *nstat;
 
   mp->gravity_nstat = ns;
+  mp->grav_G = *G;
 
   // node coordinates (constant in time)
   gpuMalloc_realw((void**)&mp->d_grav_xstore,(size_t)nglob);
@@ -150,12 +159,12 @@ void FC_FUNC_(prepare_gravity_device,
   gpuMemcpy_todevice_realw(mp->d_grav_ystore,ystore,(size_t)nglob);
   gpuMemcpy_todevice_realw(mp->d_grav_zstore,zstore,(size_t)nglob);
 
-  // per-node per-station weights, stored NGLOB_AB x nstat (fortran column-major):
-  // element (iglob,istat) is at linear index istat*nglob + iglob.
-  gpuMalloc_realw((void**)&mp->d_grav_w3,(size_t)nglob*ns);
-  gpuMalloc_realw((void**)&mp->d_grav_w5,(size_t)nglob*ns);
-  gpuMemcpy_todevice_realw(mp->d_grav_w3,w3,(size_t)nglob*ns);
-  gpuMemcpy_todevice_realw(mp->d_grav_w5,w5,(size_t)nglob*ns);
+  // station-independent per-node mass term rho0_wm (NGLOB_AB). The distance-dependent
+  // weights w3 = G*rho0_wm/Rg^3 and w5 = 3*G*rho0_wm/Rg^5 are rebuilt in the reduction
+  // kernel, so a single NGLOB array replaces the two NGLOB x nstat weight arrays (~6 GB
+  // less VRAM). G is stashed on the mesh struct and passed to the kernel as a scalar.
+  gpuMalloc_realw((void**)&mp->d_grav_mass,(size_t)nglob);
+  gpuMemcpy_todevice_realw(mp->d_grav_mass,rho0_wm,(size_t)nglob);
 
   // station coordinates are tiny; keep host copies on the struct and pass them as scalar
   // kernel arguments per launch (no device array needed for these).
@@ -234,14 +243,13 @@ void FC_FUNC_(compute_gravity_cuda,
     realw ystat = mp->h_grav_ystat[istat];
     realw zstat = mp->h_grav_zstat[istat];
 
-    // column istat of the NGLOB x nstat weight arrays
-    realw* w3_col = mp->d_grav_w3 + (size_t)istat*nglob;
-    realw* w5_col = mp->d_grav_w5 + (size_t)istat*nglob;
+    // mass term is station-independent; the same NGLOB array feeds every station's launch.
 
 #ifdef USE_CUDA
     if (run_cuda){
       gravity_reduction_kernel<<<grid,threads,0,mp->compute_stream>>>(mp->d_displ,
-                                                                      w3_col,w5_col,
+                                                                      mp->d_grav_mass,
+                                                                      mp->grav_G,
                                                                       mp->d_grav_xstore,
                                                                       mp->d_grav_ystore,
                                                                       mp->d_grav_zstore,
@@ -254,7 +262,8 @@ void FC_FUNC_(compute_gravity_cuda,
     if (run_hip){
       hipLaunchKernelGGL(gravity_reduction_kernel, dim3(grid), dim3(threads), 0, mp->compute_stream,
                          mp->d_displ,
-                         w3_col,w5_col,
+                         mp->d_grav_mass,
+                         mp->grav_G,
                          mp->d_grav_xstore,
                          mp->d_grav_ystore,
                          mp->d_grav_zstore,

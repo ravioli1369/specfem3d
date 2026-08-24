@@ -429,7 +429,7 @@ void FC_FUNC_(fault_solver_gpu,
 
 void FC_FUNC_(prepare_gravity_device,
               PREPARE_GRAVITY_DEVICE)(long* Mesh_pointer,
-                                      realw* w3, realw* w5,
+                                      realw* rho0_wm, realw* G,
                                       realw* xstore, realw* ystore, realw* zstore,
                                       int* NGLOB_AB, int* nstat,
                                       realw* xstat, realw* ystat, realw* zstat) {}

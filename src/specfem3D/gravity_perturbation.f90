@@ -69,7 +69,7 @@ contains
        xstore, ystore, zstore, &
        xigll, yigll, zigll, &
        wxgll, wygll, wzgll, &
-       NGNOD, ibool
+       NGNOD, ibool, GPU_MODE
 
   implicit none
 
@@ -201,25 +201,30 @@ contains
 
   enddo
 
-  ! precomputes the time-invariant per-node per-station weights used by gravity_timeseries.
-  ! rho0_wm (mass-integration weight) and the station coordinates are both final at this point,
-  ! and xstore/ystore/zstore are constant in time, so w3/w5 need only be built once here.
-  allocate(w3(NGLOB_AB,nstat),stat=ier)
-  if (ier /= 0) call exit_MPI_without_rank('error allocating array 2243')
-  allocate(w5(NGLOB_AB,nstat),stat=ier)
-  if (ier /= 0) call exit_MPI_without_rank('error allocating array 2244')
-  w3 = 0._CUSTOM_REAL
-  w5 = 0._CUSTOM_REAL
+  ! Time-invariant per-node per-station weights (w3 = G*rho0_wm/Rg^3, w5 = 3*G*rho0_wm/Rg^5)
+  ! for the CPU hot loop in gravity_timeseries. On the GPU path they are NOT built here: the
+  ! reduction kernel rebuilds them per output step from rho0_wm + node/station coordinates
+  ! (rho0_wm is uploaded in gravity_init_device), which avoids the NGLOB_AB x nstat host and
+  ! device storage (~6 GB on the production fine box) at the cost of a few flops on a kernel
+  ! that only runs every ntimgap steps.
+  if (.not. GPU_MODE) then
+    allocate(w3(NGLOB_AB,nstat),stat=ier)
+    if (ier /= 0) call exit_MPI_without_rank('error allocating array 2243')
+    allocate(w5(NGLOB_AB,nstat),stat=ier)
+    if (ier /= 0) call exit_MPI_without_rank('error allocating array 2244')
+    w3 = 0._CUSTOM_REAL
+    w5 = 0._CUSTOM_REAL
 
-  do istat = 1,nstat
-    do iglob = 1,NGLOB_AB
-      Rg = sqrt((xstore(iglob)-xstat(istat))**2 &
-              + (ystore(iglob)-ystat(istat))**2 &
-              + (zstore(iglob)-zstat(istat))**2)
-      w3(iglob,istat) = G_const*rho0_wm(iglob)/Rg**3
-      w5(iglob,istat) = 3._CUSTOM_REAL*G_const*rho0_wm(iglob)/Rg**5
+    do istat = 1,nstat
+      do iglob = 1,NGLOB_AB
+        Rg = sqrt((xstore(iglob)-xstat(istat))**2 &
+                + (ystore(iglob)-ystat(istat))**2 &
+                + (zstore(iglob)-zstat(istat))**2)
+        w3(iglob,istat) = G_const*rho0_wm(iglob)/Rg**3
+        w5(iglob,istat) = 3._CUSTOM_REAL*G_const*rho0_wm(iglob)/Rg**5
+      enddo
     enddo
-  enddo
+  endif
 
   end subroutine gravity_init
 
@@ -229,20 +234,26 @@ contains
 
 ! uploads the time-invariant gravity integral data to the device once, so that
 ! gravity_timeseries can run the whole per-output-step reduction on the GPU.
-! must be called after gravity_init has filled w3/w5/xstat/... AND after the GPU
+! must be called after gravity_init has filled rho0_wm/xstat/... AND after the GPU
 ! mesh has been set up (Mesh_pointer valid), i.e. from prepare_GPU.
 
   use specfem_par, only: NGLOB_AB, xstore, ystore, zstore, Mesh_pointer
 
   implicit none
 
+  real(kind=CUSTOM_REAL) :: G_const
+
   ! nothing to do if there are no gravity stations
   if (.not. GRAVITY_SIMULATION) return
 
-  ! w3/w5 : NGLOB_AB x nstat time-invariant weights (already fold in G, rho0_wm, 1/Rg**3, 3/Rg**5)
+  ! same gravitational constant (cast to CUSTOM_REAL) that the device kernel folds with rho0_wm
+  G_const = real(GRAV, kind=CUSTOM_REAL)
+
+  ! rho0_wm : NGLOB_AB station-independent per-node mass weight; the device reduction kernel
+  !           rebuilds w3 = G*rho0_wm/Rg**3 and w5 = 3*G*rho0_wm/Rg**5 per output step.
   ! xstore/ystore/zstore : node coordinates (constant in time)
   ! xstat/ystat/zstat : station coordinates (kept on host inside the device struct)
-  call prepare_gravity_device(Mesh_pointer, w3, w5, xstore, ystore, zstore, &
+  call prepare_gravity_device(Mesh_pointer, rho0_wm, G_const, xstore, ystore, zstore, &
                               NGLOB_AB, nstat, xstat, ystat, zstat)
 
   end subroutine gravity_init_device
