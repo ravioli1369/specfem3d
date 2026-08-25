@@ -1,0 +1,66 @@
+SH plane-wave FK injection -- validation example
+================================================
+
+This example validates the SH branch of the FK (Frequency-wavenumber) injection
+added to src/specfem3D/couple_with_injection.f90.  The existing FK coupling
+(small_example_coupling_FK_specfem) injects P and SV incident plane waves; this
+example exercises the new SH incident wave (INCIDENT_WAVE sh) and checks it
+against an independent Thomson-Haskell solution.
+
+SH decouples from P-SV in a layered isotropic medium: the motion is purely
+transverse (horizontal, perpendicular to the propagation azimuth), u_z = 0, and
+the free surface reflects it with coefficient +1, giving an exact free-surface
+amplification of 2.  The solver builds the SH boundary field with a 2x2 scalar
+Thomson-Haskell propagator for the state [u_t, tau_tz]; validate_sh_fk.py
+re-derives the same response independently (surface-down propagation + half-space
+up/down decomposition) and compares.
+
+Contents
+--------
+  homogeneous/   uniform half-space (rho 2720, vp 5800, vs 3460).
+                 Free-surface transverse displacement must be exactly 2x the
+                 incident; radial and vertical components must vanish.
+  layered/       four-layer crust over a half-space (same structure as the P
+                 example).  Near-surface depth transfer must match Thomson-
+                 Haskell.
+  validate_sh_fk.py   independent analytic validator (numpy only).
+
+Both cases use INCIDENT_WAVE sh, AZIMUTH 0, TAKE_OFF 30, on a single MPI
+process (NPROC = 1, GPU_MODE = .false.) so the example is reproducible anywhere.
+
+The mesh block is symmetric in x (LONGITUDE -150..150 km).  This matters for SH:
+the Stacey absorbing boundaries leak a small amount of cross-component energy at
+stations displaced along the transverse direction -- a property of the FK+Stacey
+coupling shared by P, SV and SH alike, demonstrated on-axis-clean but off-axis
+non-zero for SV as well.  The validation stations sit on the transverse symmetry
+axis (x = 0, y = 0) where all incident-wave types are clean, exactly as the P
+example's stations do.
+
+Running
+-------
+  # build the code first (from the SPECFEM3D root):
+  make xmeshfem3D xgenerate_databases xspecfem3D
+
+  # then, for each case:
+  cd homogeneous            # or: cd layered
+  ln -s ../../../../bin/x* .
+  ./xmeshfem3D && ./xgenerate_databases && ./xspecfem3D
+
+  # validate (from this directory):
+  python3 validate_sh_fk.py --self-test      # analytic engine only
+  python3 validate_sh_fk.py homogeneous
+  python3 validate_sh_fk.py layered
+
+Expected result
+---------------
+  self-test PASS  (engine reproduces 2x and 2 cos(w eta d) exactly)
+  homogeneous: polarization PASS, free-surface 2x amplification PASS
+  layered:     polarization PASS, free-surface amplification -> ~2 (long
+               wavelength); near-surface depth transfer matches Thomson-Haskell
+               to a few percent.
+
+Note on the source band: the FK source wavelet is a Gaussian centred at DC
+(stf = exp(-(omega/(2 ff0))^2)), so on this coarse teleseismic mesh the usable
+frequency band is narrow.  The depth-transfer comparison is therefore reported
+as informational and evaluated over the energy band; the pass/fail gates are the
+polarization and the free-surface amplification, which are wavelet-independent.

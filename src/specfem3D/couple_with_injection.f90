@@ -337,8 +337,8 @@
     if (type_kpsv_fk == 1) then
       ! P-wave
       ray_p = sin(theta_FK)/alpha_FK(nlayer)    ! for vp (i.e., alpha)
-    else if (type_kpsv_fk == 2) then
-      ! SV-wave
+    else if (type_kpsv_fk == 2 .or. type_kpsv_fk == 3) then
+      ! SV- or SH-wave (both shear waves: shear velocity beta)
       ray_p = sin(theta_FK)/beta_FK(nlayer)     ! for vs (i.e., beta)
     endif
 
@@ -875,6 +875,12 @@
   complex(kind=CUSTOM_CMPLX)                                :: MM,bot_vec(4),G_mat(4,4)
   real(kind=CUSTOM_REAL),parameter                          :: THRESHOLD_VS = 1.0e-6
   integer                                                   :: ilayer_ac
+  ! SH (transverse) work variables, used only when kpsv == 3.
+  ! SH decouples from P-SV: a 2x2 system for the state [ u_t ; T_tz ], worked in
+  ! physical units (unit-amplitude incident transverse displacement).
+  complex(kind=CUSTOM_CMPLX)                                :: E_sh(2,2),N_sh(2,2),R_sh(2,2),bot_sh(2),st_sh(2)
+  complex(kind=CUSTOM_CMPLX)                                :: C_sh,mu_n,dut_f,ttz_f,srt_f
+  real(kind=CUSTOM_REAL)                                    :: mu_pt
 
 !! DK DK here is the hardwired maximum size of the array
 !! DK DK Aug 2016: if this routine is called many times (for different mesh points at which the SEM is coupled with FK)
@@ -1027,7 +1033,10 @@
     ! P
     ! see (A5): E_23 = -i nu_p / k = -i omega sqrt(1/alpha^2 - p^2) / k
     !           factor eta_alpha = -i sqrt(1/alpha^2 - p^2)
-    eta_alpha(i) = -cmplx(0,1) * sqrt( 1.0 / vp(i)**2 - ray_p**2 )
+    ! complex sqrt so post-critical (evanescent) waves are handled instead of a real
+    ! sqrt of a negative number (FPE). Identical to the real sqrt when the argument is
+    ! positive (sub-critical); gives the evanescent vertical slowness when negative.
+    eta_alpha(i) = -cmplx(0,1) * sqrt( cmplx( 1.0/vp(i)**2 - ray_p**2, 0.0, kind=CUSTOM_CMPLX) )
 
     ! SV
     ! see (A5): E_11 = -i nu_s / k = -i omega sqrt(1/beta^2 - p^2) / k
@@ -1035,7 +1044,7 @@
     if (vs(i) < THRESHOLD_VS) then
       eta_beta(i) = 0.
     else
-      eta_beta(i) = -cmplx(0,1) * sqrt( 1.0 / vs(i)**2 - ray_p**2 )
+      eta_beta(i) = -cmplx(0,1) * sqrt( cmplx( 1.0/vs(i)**2 - ray_p**2, 0.0, kind=CUSTOM_CMPLX) )
     endif
 
     ! auxiliary variables
@@ -1059,13 +1068,20 @@
     C_3 = amplitude_fk * cmplx(0,1.) * ray_p * vp(nlayer)      ! amp. of incoming P in the bot. layer
     eta_p = sqrt(1.0/vp(nlayer)**2 - ray_p**2)                 ! vertical slowness for lower layer
     if (myrank == 0) write(IMAIN,*) '  Incoming P : C_3,  ray_p, eta = ', C_3, ray_p, eta_p
-  else
+  else if (kpsv == 2) then
     ! SV-wave
     ! for C_2 = sin(inc) (u=[cos(inc), sin(inc)])
     C_1 = amplitude_fk * ray_p * vs(nlayer)                   ! amp. of incoming S in the bot. layer
     eta_s = sqrt(1.0/vs(nlayer)**2 - ray_p**2)                ! vertical slowness for lower layer
 
     if (myrank == 0 ) write(IMAIN,*) '  Incoming S :  C_1,  ray_p, eta = ', C_1, ray_p, eta_s
+  else if (kpsv == 3) then
+    ! SH-wave: incoming transverse displacement of unit (amplitude_fk) amplitude, worked
+    ! in physical units. mu_n is the half-space shear modulus.
+    C_sh = cmplx(amplitude_fk, 0.0, kind=CUSTOM_CMPLX)        ! amp. of incoming SH displ. in bot. layer
+    mu_n = cmplx(rho(nlayer)*vs(nlayer)*vs(nlayer), 0.0, kind=CUSTOM_CMPLX)
+    eta_s = sqrt(1.0/vs(nlayer)**2 - ray_p**2)                ! vertical slowness for lower layer
+    if (myrank == 0 ) write(IMAIN,*) '  Incoming SH : C_sh, ray_p, eta = ', C_sh, ray_p, eta_s
   endif
 
   ! pre-computed factor for half-space (layer with index nlayer)
@@ -1096,6 +1112,31 @@
   ! now loop every frequency to determine coefs in half space
   do ii = 1,nf2
     om = 2.0 * PI * fvec(ii)
+
+    ! SH (transverse) free-surface reflection coefficient
+    if (kpsv == 3) then
+      ! half-space SH eigenvectors: [ u_t ; T_tz ] = E_sh [ S_up ; S_down ],
+      ! with up-going ~ exp(+om*eta_beta*z), down-going ~ exp(-om*eta_beta*z).
+      E_sh(1,1) = (1.0,0.0)
+      E_sh(1,2) = (1.0,0.0)
+      E_sh(2,1) =  mu_n * om * eta_beta(nlayer)
+      E_sh(2,2) = -mu_n * om * eta_beta(nlayer)
+      ! propagate the surface-response operator from the half-space top up to the surface
+      N_sh(:,:) = E_sh(:,:)
+      do i = nlayer-1,1,-1
+        call fk_propagator_sh(om,eta_beta(i),rho(i),vs(i),H(i),R_sh)
+        N_sh = matmul(R_sh,N_sh)
+      enddo
+      ! free-surface BC (T_tz = 0 at the top) with incident S_up = C_sh:
+      !   N_sh(2,1)*C_sh + N_sh(2,2)*S_down = 0  ->  S_down = -C_sh*N_sh(2,1)/N_sh(2,2)
+      if (abs(N_sh(2,2)) > TINYVAL) then
+        coeff(1,ii) = -C_sh * N_sh(2,1) / N_sh(2,2)
+      else
+        coeff(1,ii) = (0.d0,0.d0)
+      endif
+      coeff(2,ii) = (0.d0,0.d0)
+      cycle
+    endif
 
     ! apply propagation matrix in elastic layers
     N_mat(:,:) = E_mat(:,:)
@@ -1205,15 +1246,63 @@
           bot_vec(2) = coeff(1,ii)
           bot_vec(3) = C_3
           bot_vec(4) = coeff(2,ii)
-        else
+        else if (kpsv == 2) then
           bot_vec(1) = C_1
           bot_vec(3) = coeff(1,ii)
           bot_vec(4) = coeff(2,ii)
+        else if (kpsv == 3) then
+          ! SH half-space amplitudes [ S_up ; S_down ] = [ C_sh ; reflected ]
+          bot_sh(1) = C_sh
+          bot_sh(2) = coeff(1,ii)
         endif
 
         ! find which layer this point is in
         if (ispec_is_elastic(ispec)) then
           ! elastic element
+          if (kpsv == 3) then
+            ! ================= SH (transverse) point field =================
+            if (zz(ipt) <= 0.0) then
+              ! lower half-space: state = E_sh * diag(exp(+),exp(-)) * [S_up;S_down]
+              st_sh(1) = E_sh(1,1)*exp( om*eta_beta(nlayer)*zz(ipt))*bot_sh(1) &
+                       + E_sh(1,2)*exp(-om*eta_beta(nlayer)*zz(ipt))*bot_sh(2)
+              st_sh(2) = E_sh(2,1)*exp( om*eta_beta(nlayer)*zz(ipt))*bot_sh(1) &
+                       + E_sh(2,2)*exp(-om*eta_beta(nlayer)*zz(ipt))*bot_sh(2)
+              mu_pt = rho(nlayer)*vs(nlayer)*vs(nlayer)
+            else
+              ! in layers: propagate the SH state from the half-space top up to the point
+              ilayer = nlayer
+              do j = nlayer-1,1,-1
+                if (zz(ipt) <= sum(H(j:nlayer-1))) then
+                  ilayer = j; exit
+                endif
+              enddo
+              height = zz(ipt) - sum(H(ilayer+1:nlayer-1))
+              N_sh(:,:) = E_sh(:,:)
+              do j = nlayer-1,ilayer,-1
+                if (j > ilayer) then
+                  call fk_propagator_sh(om,eta_beta(j),rho(j),vs(j),H(j),R_sh)
+                else
+                  call fk_propagator_sh(om,eta_beta(j),rho(j),vs(j),height,R_sh)
+                endif
+                N_sh = matmul(R_sh,N_sh)
+              enddo
+              st_sh = matmul(N_sh,bot_sh)
+              mu_pt = rho(ilayer)*vs(ilayer)*vs(ilayer)
+            endif
+            ! st_sh = [ u_t ; sigma_tz ] at this point (physical units)
+            dut_f = st_sh(1)
+            ttz_f = st_sh(2)
+            ! transverse velocity: v_t = i*om*u_t
+            field_f(ii,1) = stf_coeff * cmplx(0,om) * dut_f
+            field_f(ii,2) = (0.d0,0.d0)
+            ! stresses (physical): sigma_rt = mu du_t/dr = -i*om*p*mu*u_t ; sigma_tz = st_sh(2)
+            if (comp_stress) then
+              srt_f = cmplx(0,-1) * om * ray_p * mu_pt * dut_f
+              field_f(ii,3) = stf_coeff * srt_f       ! sigma_rt
+              field_f(ii,4) = stf_coeff * ttz_f       ! sigma_tz
+              field_f(ii,5) = (0.d0,0.d0)
+            endif
+          else
           if (zz(ipt) <= 0.0) then
             ! in lower half space
             G_mat(:,:) = (0.0,0.0)
@@ -1287,6 +1376,7 @@
             field_f(ii,4) = stf_coeff * om * ray_p * txz_f * cmplx(0,-1)                  ! T_xz
             field_f(ii,5) = stf_coeff * om * ray_p * tzz_f                                ! T_zz
           endif
+          endif ! kpsv == 3 (SH) / else (P-SV)
 
         else if (ispec_is_acoustic(ispec)) then
           ! acoustic element
@@ -1398,6 +1488,18 @@
       !! store undersampled version of velocity  FK solution
       if (ispec_is_elastic(ispec)) then
         ! elastic element
+        if (kpsv == 3) then
+          ! SH: transverse horizontal motion (perpendicular to azimuth phi), u_z = 0
+          tmp_t1(:) = -field(:,1) * sin(phi)
+          call compute_spline_coef_to_store(tmp_t1, npts2, tmp_t2, tmp_c)
+          Veloc_FK(1,ipt,1:NF_FOR_STORING) = tmp_t2(1:NF_FOR_STORING)
+
+          tmp_t1(:) =  field(:,1) * cos(phi)
+          call compute_spline_coef_to_store(tmp_t1, npts2, tmp_t2, tmp_c)
+          Veloc_FK(2,ipt,1:NF_FOR_STORING) = tmp_t2(1:NF_FOR_STORING)
+
+          Veloc_FK(3,ipt,1:NF_FOR_STORING) = 0.0_CUSTOM_REAL
+        else
         tmp_t1(:) = field(:,1) * cos(phi)
         call compute_spline_coef_to_store(tmp_t1, npts2, tmp_t2, tmp_c)
         Veloc_FK(1,ipt,1:NF_FOR_STORING) = tmp_t2(1:NF_FOR_STORING)
@@ -1409,6 +1511,7 @@
         tmp_t1(:) = field(:,2)
         call compute_spline_coef_to_store(tmp_t1, npts2, tmp_t2, tmp_c)
         Veloc_FK(3,ipt,1:NF_FOR_STORING) = tmp_t2(1:NF_FOR_STORING)
+        endif
 
       else if (ispec_is_acoustic(ispec)) then
         ! acoustic element
@@ -1437,6 +1540,20 @@
       !! compute traction
       if (comp_stress .and. ispec_is_elastic(ispec)) then
         do lpts = 1, NF_FOR_STORING
+          if (kpsv == 3) then
+            ! SH: only the transverse shears are non-zero: sigma_rt (field 3), sigma_tz (field 4).
+            ! rotate the (r,t,z) stress into (x,y,z): with t perpendicular to azimuth phi,
+            !   sigma_xx = -sigma_rt sin2phi, sigma_xy = sigma_rt cos2phi, sigma_yy = +sigma_rt sin2phi,
+            !   sigma_xz = -sigma_tz sinphi,  sigma_yz = sigma_tz cosphi, sigma_zz = 0.
+            sigma_rt = field(lpts,3)
+            sigma_tz = field(lpts,4)
+            Txx_tmp = -2.0 * sigma_rt * cos(phi) * sin(phi)
+            Txy_tmp =  sigma_rt * (cos(phi)*cos(phi) - sin(phi)*sin(phi))
+            Tyy_tmp =  2.0 * sigma_rt * cos(phi) * sin(phi)
+            Txz_tmp = -sigma_tz * sin(phi)
+            Tyz_tmp =  sigma_tz * cos(phi)
+            Tzz_tmp =  0.0
+          else
           sigma_rr = field(lpts,3)
           sigma_rt = 0.0
           sigma_rz = field(lpts,4)
@@ -1450,6 +1567,7 @@
           Tyy_tmp = sigma_rr * sin(phi) * sin(phi) + sigma_tt * cos(phi) * cos(phi)
           Tyz_tmp = sigma_rz * sin(phi)
           Tzz_tmp = sigma_zz
+          endif
 
           !! store directly the traction
           Tract_FK(1,ipt,lpts) = Txx_tmp * nmx(ipt) +  Txy_tmp * nmy(ipt) +  Txz_tmp * nmz(ipt)
@@ -1602,6 +1720,67 @@
   Pmat(4,4) = cb - g1*ca
 
   end subroutine fk_propagator_psv
+
+!
+!-------------------------------------------------------------------------------------------------
+!
+
+  subroutine fk_propagator_sh(om,eta_beta,rho,vs,H,Rmat)
+
+! SH (transverse) propagation matrix for a single elastic layer.
+!
+! SH decouples from P-SV in a layered isotropic medium, giving a 2x2 Thomson-Haskell
+! propagator for the state vector [ u_t ; T_tz ], with u_t the transverse (horizontal,
+! perpendicular to the propagation plane) displacement and T_tz = mu * du_t/dz the
+! associated shear traction on a horizontal plane.
+!
+! Conventions match fk_propagator_psv: nu_be = om*eta_beta = -i*nu_s, where the real
+! vertical S wavenumber is nu_s = om*sqrt(1/beta^2 - p^2) = i*nu_be. With
+!   cb = cosh(nu_be h) = cos(nu_s h)
+!   sb = sinh(nu_be h) = i*sin(nu_s h)
+! the classic SH layer matrix
+!   [ u_t(z+H) ]   [  cos(nu_s h)          sin(nu_s h)/(mu nu_s) ] [ u_t(z) ]
+!   [ T_tz     ] = [ -mu nu_s sin(nu_s h)  cos(nu_s h)           ] [ T_tz   ]
+! reduces, using nu_s = i*nu_be, to the form below (real/complex bookkeeping only).
+
+  use specfem_par, only: CUSTOM_REAL
+  implicit none
+
+  integer, parameter                       :: CUSTOM_CMPLX = 8
+  real(kind=CUSTOM_REAL),intent(in)        :: om,rho,vs,H
+  complex(kind=CUSTOM_CMPLX),intent(in)    :: eta_beta
+  complex(kind=CUSTOM_CMPLX),intent(out)   :: Rmat(2,2)
+  complex(kind=CUSTOM_CMPLX)               :: c2,cb,sb,mul,nu_be
+
+  ! shear modulus of the layer
+  mul = cmplx(rho*vs*vs, 0.0, kind=CUSTOM_CMPLX)
+
+  ! nu_be = om*eta_beta = -i*nu_s
+  nu_be = om * eta_beta
+
+  ! zero vertical-wavenumber limit (om -> 0, or grazing p -> 1/beta): nu_be -> 0.
+  ! Then cos(nu_s h) -> 1, -mu nu_s sin(nu_s h) -> 0, and sin(nu_s h)/(mu nu_s) -> h/mu.
+  if (abs(nu_be) < 1.0e-30_CUSTOM_REAL) then
+    Rmat(1,1) = (1.0,0.0)
+    Rmat(2,2) = (1.0,0.0)
+    Rmat(1,2) = cmplx(H,0.0,kind=CUSTOM_CMPLX) / mul
+    Rmat(2,1) = (0.0,0.0)
+    return
+  endif
+
+  c2 = nu_be * H
+  cb = (exp(c2) + exp(-c2))/2.0    ! cos(nu_s h)
+  sb = (exp(c2) - exp(-c2))/2.0    ! i*sin(nu_s h)
+
+  ! SH layer propagator (state [u_t ; T_tz]):
+  !   sin(nu_s h)/(mu nu_s) = (i sb)/(mu * i nu_be) = sb/(mu nu_be)
+  !   -mu nu_s sin(nu_s h)  = -mu (i nu_be)(i sb)  = mu nu_be sb
+  Rmat(1,1) = cb
+  Rmat(2,2) = cb
+  Rmat(1,2) = sb / (mul * nu_be)
+  Rmat(2,1) = mul * nu_be * sb
+
+  end subroutine fk_propagator_sh
 
 !
 !-------------------------------------------------------------------------------------------------
@@ -1881,6 +2060,8 @@
               type_kpsv_fk = 1
             case('sv','SV')
               type_kpsv_fk = 2
+            case('sh','SH')
+              type_kpsv_fk = 3
             case default
               type_kpsv_fk = 1
             end select
@@ -1984,8 +2165,8 @@
     if (type_kpsv_fk == 1) then
       ! P-wave
       wave_length_at_bottom = alpha_FK(nlayer) / ff0    ! vp
-    else if (type_kpsv_fk == 2) then
-      ! SV-wave
+    else if (type_kpsv_fk == 2 .or. type_kpsv_fk == 3) then
+      ! SV- or SH-wave (shear velocity)
       wave_length_at_bottom = beta_FK(nlayer) / ff0     ! vs
     endif
 
@@ -2027,7 +2208,7 @@
   write(IMAIN,*) "                                      : Ymin/Ymax = ",Ymin_box,Ymax_box
   write(IMAIN,*) "                                      : Zmin/Zmax = ",Zmin_box,Zmax_box
   write(IMAIN,*)
-  write(IMAIN,*) "  Type of incoming wave (1=P), (2=SV) : ",type_kpsv_fk
+  write(IMAIN,*) "  Type of incoming wave (1=P),(2=SV),(3=SH) : ",type_kpsv_fk
   write(IMAIN,*)
   call flush_IMAIN()
 
