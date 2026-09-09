@@ -871,7 +871,7 @@
   complex(kind=CUSTOM_CMPLX)                                :: E_mat(4,4),Qmat(2,2),Pmat(4,4),Qmat_I(2,2)
   logical                                                   :: have_fluid_layer
   real(kind=CUSTOM_REAL)                                    :: height,two_mul
-  complex(kind=CUSTOM_CMPLX)                                :: eta_p,eta_s
+  complex(kind=CUSTOM_CMPLX)                                :: eta_p,eta_s,eta_inc
   complex(kind=CUSTOM_CMPLX)                                :: MM,bot_vec(4),G_mat(4,4)
   real(kind=CUSTOM_REAL),parameter                          :: THRESHOLD_VS = 1.0e-6
   integer                                                   :: ilayer_ac
@@ -1084,6 +1084,19 @@
     if (myrank == 0 ) write(IMAIN,*) '  Incoming SH : C_sh, ray_p, eta = ', C_sh, ray_p, eta_s
   endif
 
+  ! eta_inc is the vertical slowness of the INCIDENT wave in the lower half-space. It is used
+  ! only for the constant time delay from the wavefront origin z0 up to the half-space top
+  ! (z == 0), which is where the layer propagator's reference level sits. P is a compressional
+  ! arrival so it takes eta_p; SV and SH are shear arrivals so they take eta_s. Before this,
+  ! Tdelay used eta_p unconditionally, and eta_p is assigned only in the kpsv == 1 branch --
+  ! so for kpsv == 2 (SV) and kpsv == 3 (SH) the delay was built from uninitialised memory,
+  ! shifting the whole injected field in time by (eta_s - eta_p) * |z0|.
+  if (kpsv == 1) then
+    eta_inc = eta_p
+  else
+    eta_inc = eta_s
+  endif
+
   ! pre-computed factor for half-space (layer with index nlayer)
   two_mul = 2.0 * rho(nlayer) * vs(nlayer) * vs(nlayer)
 
@@ -1232,7 +1245,7 @@
       field_f(:,:) = (0.d0,0.d0)
 
       ! time delay with respect to top of lower half-space (set to be at z==0)
-      Tdelay = ray_p * (xx(ipt)-x0) * cos(phi) + ray_p * (yy(ipt)-y0) * sin(phi) + eta_p * (0.0-z0)
+      Tdelay = ray_p * (xx(ipt)-x0) * cos(phi) + ray_p * (yy(ipt)-y0) * sin(phi) + eta_inc * (0.0-z0)
 
       do ii = 1, nf2
         om = 2.0 * PI * fvec(ii)                                 !! pulsation
