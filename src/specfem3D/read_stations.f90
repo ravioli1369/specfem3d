@@ -179,7 +179,7 @@
           hash_prob = hash
           do while (hash_table(hash_prob) /= 0)
             ! increases hash index
-            hash_prob = mod(hash_prob + 1,size(hash_table))
+            hash_prob = mod(hash_prob,size(hash_table)) + 1   ! 1-based wrap (was mod(hash_prob+1) -> could hit 0)
             ! check if we reach again same hash, then table is full
             if (hash_prob == hash) then
               print *,'Error: Hash table is full, please consider a larger hash table!'
@@ -284,7 +284,7 @@
         prime = mod(prime * base, size(hash_table))
       enddo
 
-      hashFunc = mod(sum, size(hash_table))
+      hashFunc = mod(sum, size(hash_table)) + 1   ! 1-based: Fortran arrays start at 1 (mod gives 0..size-1)
     end function hashFunc
 
 
