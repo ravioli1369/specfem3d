@@ -4686,14 +4686,23 @@ contains
   use specfem_par_coupling
 
   implicit none
-  integer :: i,ier
+  integer :: i,ier,ier_wt
+  character(len=512) :: ray_hdr
 
   open(unit=IIN,file=trim(FKMODEL_FILE),status='old',action='read',iostat=ier)
   if (ier /= 0) then
     print *,'Error: could not open RAYLEIGH_MODEL file ',trim(FKMODEL_FILE)
     stop 'Error opening RAYLEIGH_MODEL'
   endif
-  read(IIN,*) ray_f0,ray_cR,ray_phi,ray_amp,ray_gamma,ray_delay,ray_zsurf,ray_ndepth
+  ! the wave type is an OPTIONAL 9th field, so a table written before Love existed still reads
+  read(IIN,'(A)') ray_hdr
+  ray_wavetype = 0
+  read(ray_hdr,*,iostat=ier_wt) ray_f0,ray_cR,ray_phi,ray_amp,ray_gamma,ray_delay, &
+                               ray_zsurf,ray_ndepth,ray_wavetype
+  if (ier_wt /= 0) then
+    ray_wavetype = 0
+    read(ray_hdr,*) ray_f0,ray_cR,ray_phi,ray_amp,ray_gamma,ray_delay,ray_zsurf,ray_ndepth
+  endif
   if (allocated(ray_depth)) deallocate(ray_depth,ray_U,ray_V,ray_sxx,ray_syy,ray_szz,ray_sxz)
   allocate(ray_depth(ray_ndepth),ray_U(ray_ndepth),ray_V(ray_ndepth), &
            ray_sxx(ray_ndepth),ray_syy(ray_ndepth),ray_szz(ray_ndepth),ray_sxz(ray_ndepth),stat=ier)
@@ -4704,8 +4713,19 @@ contains
   close(IIN)
 
   if (myrank == 0) then
-    write(IMAIN,*) '  Rayleigh injection: f0=',ray_f0,' c_R=',ray_cR,' azimuth(rad)=',ray_phi
-    write(IMAIN,*) '  Rayleigh injection: eigenfunction table rows =',ray_ndepth
+    ! Announce WHICH mode is being injected, not just that an injection is happening. The wave
+    ! type comes from an optional 9th header field, so a binary built before Love existed reads
+    ! a Love table as an 8-field Rayleigh one and injects the wrong wave without any error. The
+    ! table cannot detect that and neither can the launcher; only the running solver knows what
+    ! it actually did, so it says so and the run's own log becomes the evidence.
+    if (ray_wavetype == 1) then
+      write(IMAIN,*) '  Surface-wave injection: LOVE (wave type 1)'
+      write(IMAIN,*) '  Love injection: f0=',ray_f0,' c_L=',ray_cR,' azimuth(rad)=',ray_phi
+    else
+      write(IMAIN,*) '  Surface-wave injection: RAYLEIGH (wave type 0)'
+      write(IMAIN,*) '  Rayleigh injection: f0=',ray_f0,' c_R=',ray_cR,' azimuth(rad)=',ray_phi
+    endif
+    write(IMAIN,*) '  Surface-wave injection: eigenfunction table rows =',ray_ndepth
     call flush_IMAIN()
   endif
 
@@ -4775,6 +4795,7 @@ contains
   real(kind=CUSTOM_REAL) :: cphi,sphi,xi,depth,tnow,tau,om,arg,env,s,q,sp,qp,w1
   real(kind=CUSTOM_REAL) :: Um,Vm,sxx,syy,szz,sxz
   real(kind=CUSTOM_REAL) :: sigxx,sigyy,sigzz,sigxz,sigxy,sigyz,vxi,vz
+  real(kind=CUSTOM_REAL) :: vt,sigtxi,sigtz
 
   cphi = cos(ray_phi); sphi = sin(ray_phi)
   om = 2.0_CUSTOM_REAL*PI*ray_f0
@@ -4794,6 +4815,26 @@ contains
     sp = env*(w1*cos(arg) - om*sin(arg))
     qp = env*(w1*sin(arg) + om*cos(arg))
 
+    if (ray_wavetype == 1) then
+      ! LOVE: a single transverse horizontal displacement u_t = A W(z) s(tau) -- no vertical and
+      ! no longitudinal component. The table carries W in the U slot and the two Love stresses
+      ! sigma_t_xi / sigma_tz in the sxx / sxz slots. Only those two are non-zero in the (xi,t,z)
+      ! frame, and rotating sigma = s_txi (xi t + t xi) + s_tz (t z + z t) into Cartesian with
+      ! t = (-sin phi, cos phi, 0) gives the terms below. sigma_t_xi rides the QUADRATURE envelope
+      ! because it comes from d/d_xi of s, exactly as the Rayleigh sxz term does.
+      vt = ray_amp*Um*sp
+      V(1,ipt) = -vt*sphi
+      V(2,ipt) =  vt*cphi
+      V(3,ipt) = 0.0_CUSTOM_REAL
+      sigtxi = ray_amp*sxx*q
+      sigtz  = ray_amp*sxz*s
+      sigxx = -2.0_CUSTOM_REAL*cphi*sphi*sigtxi
+      sigyy =  2.0_CUSTOM_REAL*cphi*sphi*sigtxi
+      sigxy = (cphi*cphi - sphi*sphi)*sigtxi
+      sigzz = 0.0_CUSTOM_REAL
+      sigxz = -sphi*sigtz
+      sigyz =  cphi*sigtz
+    else
     vxi = ray_amp*Vm*qp
     vz  = ray_amp*Um*sp
     V(1,ipt) = vxi*cphi
@@ -4806,6 +4847,7 @@ contains
     sigzz = ray_amp*szz*s
     sigxz = ray_amp*(sxz*cphi)*q
     sigyz = ray_amp*(sxz*sphi)*q
+    endif
 
     T(1,ipt) = sigxx*ray_bnx(ipt) + sigxy*ray_bny(ipt) + sigxz*ray_bnz(ipt)
     T(2,ipt) = sigxy*ray_bnx(ipt) + sigyy*ray_bny(ipt) + sigyz*ray_bnz(ipt)

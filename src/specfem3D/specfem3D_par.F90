@@ -774,6 +774,10 @@ module specfem_par_coupling
 
   ! Rayleigh runtime injection (type 5)
   integer :: ray_ndepth = 0
+  ! 0 = Rayleigh (P-SV, the original table), 1 = Love (SH surface mode). Read from an optional
+  ! 9th field on the table header; tables written before Love existed have 8 fields and so
+  ! default to Rayleigh, which keeps every existing run reproducible.
+  integer :: ray_wavetype = 0
   real(kind=CUSTOM_REAL) :: ray_f0,ray_cR,ray_phi,ray_amp,ray_gamma,ray_delay,ray_zsurf
   real(kind=CUSTOM_REAL),dimension(:),allocatable :: ray_depth,ray_U,ray_V,ray_sxx,ray_syy,ray_szz,ray_sxz
   real(kind=CUSTOM_REAL),dimension(:),allocatable :: ray_bx,ray_by,ray_bz,ray_bnx,ray_bny,ray_bnz
