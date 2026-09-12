@@ -445,8 +445,23 @@ void FC_FUNC_(prepare_constants_device,
   if (mp->is_couple_with_injection) {
     gpuMalloc_realw((void**)&(mp->d_veloc_inj),NDIM*NGLL2*(mp->d_num_abs_boundary_faces));
     gpuMalloc_realw((void**)&(mp->d_tract_inj),NDIM*NGLL2*(mp->d_num_abs_boundary_faces));
-    gpuMalloc_realw((void**)&(mp->d_b_boundary_injection_field),NDIM*NGLL2*(mp->d_num_abs_boundary_faces));
-    gpuMalloc_realw((void**)&(mp->d_b_boundary_injection_potential),NGLL2*(mp->d_num_abs_boundary_faces));
+
+    // d_b_boundary_injection_field/potential are only ever written by
+    // compute_stacey_elastic/acoustic when SAVE_STACEY is true (prepare_timerun.F90:
+    // SAVE_STACEY = .not.UNDO_ATTENUATION_AND_OR_PML .and. (SIMULATION_TYPE==3 .or.
+    // (SIMULATION_TYPE==1 .and. SAVE_FORWARD))); skip the allocation otherwise.
+    int save_stacey = (!mp->undo_attenuation) &&
+                       (mp->simulation_type == 3 || (mp->simulation_type == 1 && mp->save_forward));
+    if (save_stacey) {
+      gpuMalloc_realw((void**)&(mp->d_b_boundary_injection_field),NDIM*NGLL2*(mp->d_num_abs_boundary_faces));
+    } else {
+      mp->d_b_boundary_injection_field = NULL;
+    }
+    if (save_stacey && mp->nspec_acoustic > 0) {
+      gpuMalloc_realw((void**)&(mp->d_b_boundary_injection_potential),NGLL2*(mp->d_num_abs_boundary_faces));
+    } else {
+      mp->d_b_boundary_injection_potential = NULL;
+    }
   }
 
   GPU_ERROR_CHECKING("prepare_constants_device");
