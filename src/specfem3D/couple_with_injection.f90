@@ -500,6 +500,7 @@
       ! Rayleigh runtime injection setup
       call enumerate_rayleigh_boundary()
       call ReadRayleighModelInput()
+      call precompute_rayleigh_coeffs()
 
     case (INJECTION_TECHNIQUE_IS_SPECFEM)
       ! SPECFEM coupling
@@ -4441,6 +4442,18 @@ contains
   ! only for forward wavefield
   if (SIMULATION_TYPE /= 1) return
 
+  ! Rayleigh/Love runtime injection: the field is written straight into the arrays that
+  ! are handed to the device, with the transfer sign already folded into the coefficients,
+  ! so this path needs no staging copy, no sign pass and no per-step allocation.
+  if (INJECTION_TECHNIQUE_TYPE == INJECTION_TECHNIQUE_IS_RAYLEIGH) then
+    call compute_rayleigh_field(Veloc_specfem,Tract_specfem,num_abs_boundary_faces*NGLLSQUARE,it)
+    if (GPU_MODE) then
+      npts = num_abs_boundary_faces * NGLLSQUARE * NDIM
+      call transfer_injection_field_to_device(npts,Veloc_specfem,Tract_specfem,Mesh_pointer)
+    endif
+    return
+  endif
+
   ! gets velocity & stress for boundary points
   select case(INJECTION_TECHNIQUE_TYPE)
   case (INJECTION_TECHNIQUE_IS_DSM)
@@ -4464,9 +4477,6 @@ contains
     ! SPECFEM coupling
     call read_specfem_file(Veloc_specfem,Tract_specfem,num_abs_boundary_faces*NGLLSQUARE,it)
 
-  case (INJECTION_TECHNIQUE_IS_RAYLEIGH)
-    ! Rayleigh runtime injection: compute the boundary field at this step
-    call compute_rayleigh_field(Veloc_specfem,Tract_specfem,num_abs_boundary_faces*NGLLSQUARE,it)
   end select
 
   ! return for cpu mode
@@ -4492,8 +4502,8 @@ contains
     !! CD CD add this
     if (RECIPROCITY_AND_KH_INTEGRAL) Tract_axisem_time(:,:,it) = Tract_axisem(:,:)
 
-  case (INJECTION_TECHNIQUE_IS_SPECFEM, INJECTION_TECHNIQUE_IS_RAYLEIGH)
-    ! SPECFEM / Rayleigh coupling
+  case (INJECTION_TECHNIQUE_IS_SPECFEM)
+    ! SPECFEM coupling
     veloc_inj(:,:) = Veloc_specfem(:,:)
     tract_inj(:,:) = Tract_specfem(:,:)
 
@@ -4776,13 +4786,105 @@ contains
 !-------------------------------------------------------------------------------------------------
 !
 
+  subroutine precompute_rayleigh_coeffs()
+
+! Builds the time-invariant coefficients described in specfem_par_coupling. Called once,
+! after the boundary enumeration and the table read. The sign flip that the GPU staging
+! used to apply every step (veloc_inj = -veloc_inj) is folded in here instead.
+
+  use constants, only: CUSTOM_REAL,NDIM,NGLLSQUARE,myrank,IMAIN
+  use specfem_par, only: GPU_MODE,num_abs_boundary_faces
+  use specfem_par_coupling
+
+  implicit none
+  integer :: ipt,k,ier,nb
+  double precision :: cphi,sphi,xi,depth,Um,Vm,sxx,syy,szz,sxz,amp,nx,ny,nz
+  double precision :: c2,s2,cs,dmax,sgn
+  real(kind=CUSTOM_REAL) :: Um4,Vm4,sxx4,syy4,szz4,sxz4
+
+  nb = num_abs_boundary_faces*NGLLSQUARE
+  cphi = cos(dble(ray_phi)); sphi = sin(dble(ray_phi))
+  c2 = cphi*cphi; s2 = sphi*sphi; cs = cphi*sphi
+  amp = dble(ray_amp)
+  dmax = dble(ray_depth(ray_ndepth))
+  sgn = 1.d0
+  if (GPU_MODE) sgn = -1.d0
+
+  ray_nact = 0
+  do ipt = 1,nb
+    if (dble(ray_zsurf) - dble(ray_bz(ipt)) < dmax) ray_nact = ray_nact + 1
+  enddo
+
+  if (allocated(ray_act)) deallocate(ray_act,ray_t0p,ray_Vs,ray_Vq,ray_Ts,ray_Tq)
+  allocate(ray_act(max(ray_nact,1)),ray_t0p(max(ray_nact,1)), &
+           ray_Vs(NDIM,max(ray_nact,1)),ray_Vq(NDIM,max(ray_nact,1)), &
+           ray_Ts(NDIM,max(ray_nact,1)),ray_Tq(NDIM,max(ray_nact,1)),stat=ier)
+  if (ier /= 0) stop 'error allocating precomputed Rayleigh injection coefficients'
+
+  k = 0
+  do ipt = 1,nb
+    depth = dble(ray_zsurf) - dble(ray_bz(ipt))
+    if (depth >= dmax) cycle
+    k = k + 1
+    ray_act(k) = ipt
+
+    call interp_ray_table(real(depth,kind=CUSTOM_REAL),Um4,Vm4,sxx4,syy4,szz4,sxz4)
+    Um = dble(Um4); Vm = dble(Vm4); sxx = dble(sxx4)
+    syy = dble(syy4); szz = dble(szz4); sxz = dble(sxz4)
+
+    xi = dble(ray_bx(ipt))*cphi + dble(ray_by(ipt))*sphi
+    ray_t0p(k) = -xi/dble(ray_cR) - dble(ray_delay)
+
+    nx = dble(ray_bnx(ipt)); ny = dble(ray_bny(ipt)); nz = dble(ray_bnz(ipt))
+
+    if (ray_wavetype == 1) then
+      ! Love: the table carries W in the U slot and sigma_t_xi / sigma_tz in sxx / sxz
+      ray_Vs(1,k) = real(sgn*(-amp*Um*sphi),kind=CUSTOM_REAL)
+      ray_Vs(2,k) = real(sgn*( amp*Um*cphi),kind=CUSTOM_REAL)
+      ray_Vs(3,k) = 0._CUSTOM_REAL
+      ray_Vq(1,k) = 0._CUSTOM_REAL
+      ray_Vq(2,k) = 0._CUSTOM_REAL
+      ray_Vq(3,k) = 0._CUSTOM_REAL
+      ray_Ts(1,k) = real(sgn*(-sphi*amp*sxz*nz),kind=CUSTOM_REAL)
+      ray_Ts(2,k) = real(sgn*( cphi*amp*sxz*nz),kind=CUSTOM_REAL)
+      ray_Ts(3,k) = real(sgn*( amp*sxz*(-sphi*nx + cphi*ny)),kind=CUSTOM_REAL)
+      ray_Tq(1,k) = real(sgn*( amp*sxx*(-2.d0*cs*nx + (c2-s2)*ny)),kind=CUSTOM_REAL)
+      ray_Tq(2,k) = real(sgn*( amp*sxx*((c2-s2)*nx + 2.d0*cs*ny)),kind=CUSTOM_REAL)
+      ray_Tq(3,k) = 0._CUSTOM_REAL
+    else
+      ray_Vs(1,k) = 0._CUSTOM_REAL
+      ray_Vs(2,k) = 0._CUSTOM_REAL
+      ray_Vs(3,k) = real(sgn*(amp*Um),kind=CUSTOM_REAL)
+      ray_Vq(1,k) = real(sgn*(amp*Vm*cphi),kind=CUSTOM_REAL)
+      ray_Vq(2,k) = real(sgn*(amp*Vm*sphi),kind=CUSTOM_REAL)
+      ray_Vq(3,k) = 0._CUSTOM_REAL
+      ray_Ts(1,k) = real(sgn*(amp*((sxx*c2 + syy*s2)*nx + (sxx-syy)*cs*ny)),kind=CUSTOM_REAL)
+      ray_Ts(2,k) = real(sgn*(amp*((sxx-syy)*cs*nx + (sxx*s2 + syy*c2)*ny)),kind=CUSTOM_REAL)
+      ray_Ts(3,k) = real(sgn*(amp*szz*nz),kind=CUSTOM_REAL)
+      ray_Tq(1,k) = real(sgn*(amp*sxz*cphi*nz),kind=CUSTOM_REAL)
+      ray_Tq(2,k) = real(sgn*(amp*sxz*sphi*nz),kind=CUSTOM_REAL)
+      ray_Tq(3,k) = real(sgn*(amp*sxz*(cphi*nx + sphi*ny)),kind=CUSTOM_REAL)
+    endif
+  enddo
+
+  if (myrank == 0) then
+    write(IMAIN,*) '  Surface-wave injection: boundary points =',nb, &
+                   ', contributing =',ray_nact
+    call flush_IMAIN()
+  endif
+
+  end subroutine precompute_rayleigh_coeffs
+
+!
+!-------------------------------------------------------------------------------------------------
+!
+
   subroutine compute_rayleigh_field(V,T,nb,it)
 
-! Analytic plane-Rayleigh boundary velocity + traction at simulation step `it`
-! (t = (it-1)*deltat - t0). Displacement u_z = A U(z) s(tau), u_xi = A V(z) q(tau),
-! tau = t - xi/c_R - delay, with a narrowband Gabor s and its analytic quadrature q
-! (env*sin) -- no Hilbert or FFT needed. Stress (xi,eta,z) is rotated to Cartesian by
-! the azimuth phi and dotted with the outward normal.
+! Analytic plane-Rayleigh (or Love) boundary velocity + traction at step `it`, from the
+! coefficients built by precompute_rayleigh_coeffs. arg is formed in double and rounded
+! once: tau cancels against terms far larger than itself, so forming it in single would
+! cost roughly 1.5 decimal digits in the wavelet phase.
 
   use constants, only: CUSTOM_REAL,NDIM,PI
   use specfem_par, only: deltat,t0
@@ -4790,68 +4892,33 @@ contains
 
   implicit none
   integer,intent(in) :: nb,it
-  real(kind=CUSTOM_REAL),intent(out) :: V(NDIM,nb),T(NDIM,nb)
-  integer :: ipt
-  real(kind=CUSTOM_REAL) :: cphi,sphi,xi,depth,tnow,tau,om,arg,env,s,q,sp,qp,w1
-  real(kind=CUSTOM_REAL) :: Um,Vm,sxx,syy,szz,sxz
-  real(kind=CUSTOM_REAL) :: sigxx,sigyy,sigzz,sigxz,sigxy,sigyz,vxi,vz
-  real(kind=CUSTOM_REAL) :: vt,sigtxi,sigtz
+  real(kind=CUSTOM_REAL),intent(inout) :: V(NDIM,nb),T(NDIM,nb)
+  integer :: k,ipt
+  real(kind=CUSTOM_REAL) :: om,arg,env,s,q,sp,qp,w1,ca,sa,ig2
+  double precision :: om_d,tnow_d
 
-  cphi = cos(ray_phi); sphi = sin(ray_phi)
   om = 2.0_CUSTOM_REAL*PI*ray_f0
-  tnow = real(it-1,kind=CUSTOM_REAL)*deltat - t0
+  om_d = 2.d0*dble(PI)*dble(ray_f0)
+  tnow_d = dble(it-1)*dble(deltat) - dble(t0)
+  ig2 = 1.0_CUSTOM_REAL/(ray_gamma**2)
 
-  do ipt = 1,nb
-    xi = ray_bx(ipt)*cphi + ray_by(ipt)*sphi
-    depth = ray_zsurf - ray_bz(ipt)
-    call interp_ray_table(depth,Um,Vm,sxx,syy,szz,sxz)
+  do k = 1,ray_nact
+    ipt = ray_act(k)
+    arg = real(om_d*(tnow_d + ray_t0p(k)),kind=CUSTOM_REAL)
+    env = exp(-0.5_CUSTOM_REAL*(arg*arg)*ig2)
+    ca = cos(arg); sa = sin(arg)
+    s = env*ca
+    q = env*sa
+    w1 = -om*arg*ig2
+    sp = env*(w1*ca - om*sa)
+    qp = env*(w1*sa + om*ca)
 
-    tau = tnow - xi/ray_cR - ray_delay
-    arg = om*tau
-    env = exp(-0.5_CUSTOM_REAL*(arg/ray_gamma)**2)
-    s = env*cos(arg)
-    q = env*sin(arg)
-    w1 = -om*arg/(ray_gamma**2)
-    sp = env*(w1*cos(arg) - om*sin(arg))
-    qp = env*(w1*sin(arg) + om*cos(arg))
-
-    if (ray_wavetype == 1) then
-      ! LOVE: a single transverse horizontal displacement u_t = A W(z) s(tau) -- no vertical and
-      ! no longitudinal component. The table carries W in the U slot and the two Love stresses
-      ! sigma_t_xi / sigma_tz in the sxx / sxz slots. Only those two are non-zero in the (xi,t,z)
-      ! frame, and rotating sigma = s_txi (xi t + t xi) + s_tz (t z + z t) into Cartesian with
-      ! t = (-sin phi, cos phi, 0) gives the terms below. sigma_t_xi rides the QUADRATURE envelope
-      ! because it comes from d/d_xi of s, exactly as the Rayleigh sxz term does.
-      vt = ray_amp*Um*sp
-      V(1,ipt) = -vt*sphi
-      V(2,ipt) =  vt*cphi
-      V(3,ipt) = 0.0_CUSTOM_REAL
-      sigtxi = ray_amp*sxx*q
-      sigtz  = ray_amp*sxz*s
-      sigxx = -2.0_CUSTOM_REAL*cphi*sphi*sigtxi
-      sigyy =  2.0_CUSTOM_REAL*cphi*sphi*sigtxi
-      sigxy = (cphi*cphi - sphi*sphi)*sigtxi
-      sigzz = 0.0_CUSTOM_REAL
-      sigxz = -sphi*sigtz
-      sigyz =  cphi*sigtz
-    else
-    vxi = ray_amp*Vm*qp
-    vz  = ray_amp*Um*sp
-    V(1,ipt) = vxi*cphi
-    V(2,ipt) = vxi*sphi
-    V(3,ipt) = vz
-
-    sigxx = ray_amp*(sxx*cphi*cphi + syy*sphi*sphi)*s
-    sigyy = ray_amp*(sxx*sphi*sphi + syy*cphi*cphi)*s
-    sigxy = ray_amp*((sxx-syy)*sphi*cphi)*s
-    sigzz = ray_amp*szz*s
-    sigxz = ray_amp*(sxz*cphi)*q
-    sigyz = ray_amp*(sxz*sphi)*q
-    endif
-
-    T(1,ipt) = sigxx*ray_bnx(ipt) + sigxy*ray_bny(ipt) + sigxz*ray_bnz(ipt)
-    T(2,ipt) = sigxy*ray_bnx(ipt) + sigyy*ray_bny(ipt) + sigyz*ray_bnz(ipt)
-    T(3,ipt) = sigxz*ray_bnx(ipt) + sigyz*ray_bny(ipt) + sigzz*ray_bnz(ipt)
+    V(1,ipt) = ray_Vs(1,k)*sp + ray_Vq(1,k)*qp
+    V(2,ipt) = ray_Vs(2,k)*sp + ray_Vq(2,k)*qp
+    V(3,ipt) = ray_Vs(3,k)*sp + ray_Vq(3,k)*qp
+    T(1,ipt) = ray_Ts(1,k)*s  + ray_Tq(1,k)*q
+    T(2,ipt) = ray_Ts(2,k)*s  + ray_Tq(2,k)*q
+    T(3,ipt) = ray_Ts(3,k)*s  + ray_Tq(3,k)*q
   enddo
 
   end subroutine compute_rayleigh_field

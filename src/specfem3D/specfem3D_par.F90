@@ -781,6 +781,19 @@ module specfem_par_coupling
   real(kind=CUSTOM_REAL) :: ray_f0,ray_cR,ray_phi,ray_amp,ray_gamma,ray_delay,ray_zsurf
   real(kind=CUSTOM_REAL),dimension(:),allocatable :: ray_depth,ray_U,ray_V,ray_sxx,ray_syy,ray_szz,ray_sxz
   real(kind=CUSTOM_REAL),dimension(:),allocatable :: ray_bx,ray_by,ray_bz,ray_bnx,ray_bny,ray_bnz
+  ! Time-invariant part of the injected boundary field, precomputed once. The field
+  ! factorises exactly as
+  !   V(:,ipt) = ray_Vs(:,k)*sp(tau) + ray_Vq(:,k)*qp(tau)
+  !   T(:,ipt) = ray_Ts(:,k)*s(tau)  + ray_Tq(:,k)*q(tau),   tau = tnow + ray_t0p(k)
+  ! so the table lookup and the azimuth/normal rotation leave the per-step loop.
+  ! ray_act lists only the points above the deepest table sample; below it the table
+  ! returns exact zeros, so those entries keep their zero-initialised value for the
+  ! whole run. ray_t0p is double: tau is a difference of terms far larger than itself
+  ! and loses about 1.5 decimal digits to cancellation if it is formed in single.
+  integer :: ray_nact = 0
+  integer,dimension(:),allocatable :: ray_act
+  double precision,dimension(:),allocatable :: ray_t0p
+  real(kind=CUSTOM_REAL),dimension(:,:),allocatable :: ray_Vs,ray_Vq,ray_Ts,ray_Tq
 
   ! specfem coupling
   !
