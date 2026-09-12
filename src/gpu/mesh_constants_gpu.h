@@ -816,6 +816,13 @@ typedef struct mesh_ {
   // coupling with injection wavefield on interface
   int is_couple_with_injection;
   realw *d_veloc_inj, *d_tract_inj;
+  // Rayleigh/Love runtime injection (type 5): precomputed coefficients uploaded
+  // once by prepare_rayleigh_injection_device(); ray_nact guards its cleanup free,
+  // same pattern as gravity_nstat for the gravity-perturbation arrays.
+  int ray_nact;
+  int* d_ray_act;
+  double* d_ray_t0p;
+  realw *d_ray_Vs, *d_ray_Vq, *d_ray_Ts, *d_ray_Tq;
   realw *d_b_boundary_injection_field;
   realw *d_b_boundary_injection_potential;
 

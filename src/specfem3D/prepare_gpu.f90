@@ -47,6 +47,7 @@
   use wavefield_discontinuity_solver, only: prepare_wavefield_discontinuity_GPU
 
   use gravity_perturbation, only: GRAVITY_SIMULATION, gravity_init_device
+  use specfem_par_coupling, only: ray_nact,ray_act,ray_t0p,ray_Vs,ray_Vq,ray_Ts,ray_Tq
 
   implicit none
 
@@ -107,6 +108,16 @@
                                 UNDO_ATTENUATION_AND_OR_PML, &
                                 PML_CONDITIONS, &
                                 USE_CUDA_AWARE_MPI)
+
+  ! Rayleigh/Love runtime injection: upload the coefficients precomputed once on the
+  ! host (precompute_rayleigh_coeffs, called before prepare_GPU) and zero-initialise
+  ! d_veloc_inj/d_tract_inj -- points below the table are not in ray_act and must stay
+  ! at exactly zero for the whole run.
+  if (COUPLE_WITH_INJECTION_TECHNIQUE .and. INJECTION_TECHNIQUE_TYPE == INJECTION_TECHNIQUE_IS_RAYLEIGH) then
+    call prepare_rayleigh_injection_device(Mesh_pointer,ray_nact,ray_act,ray_t0p, &
+                                           ray_Vs,ray_Vq,ray_Ts,ray_Tq, &
+                                           num_abs_boundary_faces*NGLLSQUARE*NDIM)
+  endif
 
 
   ! prepares fields on GPU for acoustic simulations

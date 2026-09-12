@@ -440,6 +440,26 @@ void FC_FUNC_(compute_gravity_cuda,
                                     realw* h_grav_N,
                                     realw* h_grav_Z) {}
 
+//
+// src/gpu/injection_cuda.cu
+//
+
+void FC_FUNC_(prepare_rayleigh_injection_device,
+              PREPARE_RAYLEIGH_INJECTION_DEVICE)(long* Mesh_pointer,
+                                                 int* nact,
+                                                 int* ray_act,
+                                                 double* ray_t0p,
+                                                 realw* ray_Vs, realw* ray_Vq,
+                                                 realw* ray_Ts, realw* ray_Tq,
+                                                 int* size_face) {}
+
+void FC_FUNC_(compute_rayleigh_injection_cuda,
+              COMPUTE_RAYLEIGH_INJECTION_CUDA)(long* Mesh_pointer,
+                                               double* tnow_d,
+                                               double* om_d,
+                                               realw* om,
+                                               realw* ig2) {}
+
 
 //
 // src/gpu/helper_functions.cu

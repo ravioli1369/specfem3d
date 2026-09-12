@@ -4417,7 +4417,7 @@ contains
 ! read injection file
 
   use constants
-  use specfem_par, only: SIMULATION_TYPE,GPU_MODE,Mesh_pointer
+  use specfem_par, only: SIMULATION_TYPE,GPU_MODE,Mesh_pointer,deltat,t0
   use specfem_par, only: num_abs_boundary_faces,it
 
   ! boundary coupling
@@ -4426,10 +4426,13 @@ contains
     Veloc_dsm_boundary, Tract_dsm_boundary, Veloc_axisem, Tract_axisem, Tract_axisem_time, &
     Veloc_specfem, Tract_specfem
   use specfem_par_coupling, only: NP_RESAMP, Veloc_FK, Tract_FK
+  use specfem_par_coupling, only: ray_f0,ray_gamma
 
   implicit none
   integer :: ii, kk, iim1, iip1, iip2,npts
   real(kind=CUSTOM_REAL) :: cs1,cs2,cs3,cs4,w
+  real(kind=CUSTOM_REAL) :: om,ig2
+  double precision :: om_d,tnow_d
   ! temporary arrays coupling
   real(kind=CUSTOM_REAL), dimension(:,:),allocatable :: veloc_inj,tract_inj
 
@@ -4442,14 +4445,21 @@ contains
   ! only for forward wavefield
   if (SIMULATION_TYPE /= 1) return
 
-  ! Rayleigh/Love runtime injection: the field is written straight into the arrays that
-  ! are handed to the device, with the transfer sign already folded into the coefficients,
-  ! so this path needs no staging copy, no sign pass and no per-step allocation.
+  ! Rayleigh/Love runtime injection. In GPU_MODE the field is evaluated directly on the
+  ! device by compute_rayleigh_injection_cuda() (its coefficients uploaded once by
+  ! prepare_rayleigh_injection_device() in prepare_gpu.f90): no host buffer, no per-step
+  ! allocation, no H2D copy of the field. CPU mode keeps the stage-1 host evaluation (the
+  ! CPU Stacey routine has no case for type 5, so this is unreachable there today, same as
+  ! before this change).
   if (INJECTION_TECHNIQUE_TYPE == INJECTION_TECHNIQUE_IS_RAYLEIGH) then
-    call compute_rayleigh_field(Veloc_specfem,Tract_specfem,num_abs_boundary_faces*NGLLSQUARE,it)
     if (GPU_MODE) then
-      npts = num_abs_boundary_faces * NGLLSQUARE * NDIM
-      call transfer_injection_field_to_device(npts,Veloc_specfem,Tract_specfem,Mesh_pointer)
+      om = 2.0_CUSTOM_REAL*PI*ray_f0
+      om_d = 2.d0*dble(PI)*dble(ray_f0)
+      tnow_d = dble(it-1)*dble(deltat) - dble(t0)
+      ig2 = 1.0_CUSTOM_REAL/(ray_gamma**2)
+      call compute_rayleigh_injection_cuda(Mesh_pointer,tnow_d,om_d,om,ig2)
+    else
+      call compute_rayleigh_field(Veloc_specfem,Tract_specfem,num_abs_boundary_faces*NGLLSQUARE,it)
     endif
     return
   endif

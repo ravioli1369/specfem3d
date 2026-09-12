@@ -125,6 +125,10 @@ void FC_FUNC_(prepare_constants_device,
   // guards the cleanup free of the d_grav_* arrays below.
   mp->gravity_nstat = 0;
 
+  // no Rayleigh/Love injection coefficients uploaded yet (set in
+  // prepare_rayleigh_injection_device); guards the cleanup free below.
+  mp->ray_nact = 0;
+
   // from here: routines will get mesh from pointer
   //            Mesh* mp = (Mesh*)(*Mesh_pointer);
 
@@ -2280,6 +2284,17 @@ TRACE("prepare_cleanup_device");
     gpuFree(mp->d_tract_inj);
     gpuFree(mp->d_b_boundary_injection_field);
     gpuFree(mp->d_b_boundary_injection_potential);
+  }
+
+  // Rayleigh/Love runtime injection coefficients (only allocated if
+  // prepare_rayleigh_injection_device was called, i.e. type 5 + GPU_MODE)
+  if (mp->ray_nact > 0) {
+    gpuFree(mp->d_ray_act);
+    gpuFree(mp->d_ray_t0p);
+    gpuFree(mp->d_ray_Vs);
+    gpuFree(mp->d_ray_Vq);
+    gpuFree(mp->d_ray_Ts);
+    gpuFree(mp->d_ray_Tq);
   }
 
   // LTS
