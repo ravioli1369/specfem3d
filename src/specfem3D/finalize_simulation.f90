@@ -226,12 +226,15 @@
   if (allocated(Mxx_der)) deallocate(Mxx_der,Myy_der,Mzz_der,Mxy_der,Mxz_der,Myz_der,sloc_der)
 
   ! mesh
-  deallocate(ibool)
-  deallocate(irregular_element_number)
-  deallocate(xixstore,xiystore,xizstore,etaxstore,etaystore,etazstore,gammaxstore,gammaystore,gammazstore,jacobianstore)
-  deallocate(deriv_mapping)
-  deallocate(xstore,ystore,zstore)
-  deallocate(kappastore,mustore,rhostore)
+  ! (guarded: prepare_timerun.F90 may already have freed these, right after the GPU
+  ! upload, for a forward GPU_MODE run -- see the comment there)
+  if (allocated(ibool)) deallocate(ibool)
+  if (allocated(irregular_element_number)) deallocate(irregular_element_number)
+  if (allocated(xixstore)) &
+    deallocate(xixstore,xiystore,xizstore,etaxstore,etaystore,etazstore,gammaxstore,gammaystore,gammazstore,jacobianstore)
+  if (allocated(deriv_mapping)) deallocate(deriv_mapping)
+  if (allocated(xstore)) deallocate(xstore,ystore,zstore)
+  if (allocated(kappastore)) deallocate(kappastore,mustore,rhostore)
   deallocate(ispec_is_acoustic,ispec_is_elastic,ispec_is_poroelastic)
 
   if (ELASTIC_SIMULATION) then

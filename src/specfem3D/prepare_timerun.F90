@@ -115,6 +115,42 @@
   call prepare_optimized_arrays()
   if (myrank == 0) then; write(IMAIN,*) 'PREP_TIMING optimized_arrays = ',wtime()-tprev; call flush_IMAIN(); tprev = wtime(); endif
 
+  ! Once uploaded to the GPU, the host copies of the mesh geometry/material arrays are
+  ! dead weight for the rest of a forward, GPU_MODE run: the time loop, seismogram output
+  ! (SAVE_SEISMOGRAMS_STRAIN aside), and gravity_timeseries() all read displ/veloc/accel
+  ! from the device, not these host arrays (see couple_with_injection.f90 for gravity;
+  ! write_seismograms.F90 for the GPU_MODE seismogram path). Freeing them here, instead of
+  ! at finalize_simulation.f90 as usual, is the only thing that recovers this host RAM for
+  ! the remainder of the run -- on the 1.2 km box this is tens of GB.
+  !
+  ! Must run AFTER prepare_optimized_arrays(), not right after prepare_GPU(): that call
+  ! itself still reads xixstore/etaxstore/.../jacobianstore and irregular_element_number
+  ! (prepare_irregular_elements(), prepare_fused_array() in prepare_optimized_arrays.F90)
+  ! and is where deriv_mapping is allocated for the first time -- freeing these arrays
+  ! before prepare_optimized_arrays() runs segfaults it (found by testing on the 1.2 km
+  ! box, not by inspection: an earlier version of this patch put the free right after
+  ! prepare_GPU() and crashed here).
+  !
+  ! Gated on every configuration where something later still needs them on the host:
+  ! SIMULATION_TYPE==1 (adjoint/kernel runs read ibool for moment-tensor seismograms),
+  ! not SAVE_SEISMOGRAMS_STRAIN (compute_seismograms_strain() has no GPU_MODE guard and
+  ! reads ibool every seismogram-output step), not MOVIE_SIMULATION (movie/shakemap output
+  ! reads ibool and the derivative arrays). PML_CONDITIONS is not part of the gate: its one
+  ! host consumer, pml_output_VTKs(), runs earlier in this subroutine, before prepare_GPU().
+  if (GPU_MODE .and. SIMULATION_TYPE == 1 .and. .not. SAVE_SEISMOGRAMS_STRAIN .and. .not. MOVIE_SIMULATION) then
+    deallocate(ibool)
+    deallocate(irregular_element_number)
+    deallocate(xixstore,xiystore,xizstore,etaxstore,etaystore,etazstore,gammaxstore,gammaystore,gammazstore,jacobianstore)
+    deallocate(deriv_mapping)
+    deallocate(xstore,ystore,zstore)
+    deallocate(kappastore,mustore,rhostore)
+    if (myrank == 0) then
+      write(IMAIN,*) 'freed host mesh geometry/material arrays after GPU upload (GPU_MODE, forward run)'
+      call flush_IMAIN()
+    endif
+  endif
+  if (myrank == 0) then; write(IMAIN,*) 'PREP_TIMING free_host_arrays = ',wtime()-tprev; call flush_IMAIN(); tprev = wtime(); endif
+
   ! synchronize all the processes
   call synchronize_all()
 
