@@ -211,6 +211,9 @@
   seismo_offset = it_begin-1
   seismo_current = 0
 
+  ! resume: overrides it_begin, seismo_offset and seismo_current
+  call checkpoint_restore()
+
   ! get MPI starting
   time_start = wtime()
 
@@ -336,6 +339,11 @@
         call surface_or_volume_integral_on_whole_domain()
         write(158,*) it*DT, integral_boun(1), integral_boun(2), integral_boun(3)
       endif
+    endif
+
+    ! periodic checkpoint
+    if (NTSTEP_BETWEEN_CHECKPOINTS > 0) then
+      if (mod(it,NTSTEP_BETWEEN_CHECKPOINTS) == 0 .and. it < it_end) call checkpoint_save()
     endif
 
   !

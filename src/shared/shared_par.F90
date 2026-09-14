@@ -157,6 +157,9 @@ end module constants
   logical :: SAVE_MESH_FILES
   character(len=MAX_STRING_LEN) :: LOCAL_PATH
 
+  ! checkpoint/restart
+  integer :: NTSTEP_BETWEEN_CHECKPOINTS
+
   ! seismograms
   integer :: NTSTEP_BETWEEN_OUTPUT_INFO
   integer :: NTSTEP_BETWEEN_OUTPUT_SEISMOS,NTSTEP_BETWEEN_READ_ADJSRC

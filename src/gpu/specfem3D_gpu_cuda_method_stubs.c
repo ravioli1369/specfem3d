@@ -1025,6 +1025,68 @@ void FC_FUNC_(transfer_b_strain_to_device,
                                            realw* b_epsilondev_trace,
                                            int* size_epsilondev) {}
 
+void FC_FUNC_(transfer_b_rmemory_from_device,
+              TRANSFER_B_RMEMORY_FROM_DEVICE)(long* Mesh_pointer,
+                                              realw* b_R_xx,realw* b_R_yy,realw* b_R_xy,
+                                              realw* b_R_xz,realw* b_R_yz,
+                                              realw* b_R_trace,
+                                              int* size_R) {}
+
+void FC_FUNC_(transfer_b_strain_from_device,
+              TRANSFER_B_STRAIN_FROM_DEVICE)(long* Mesh_pointer,
+                                             realw* b_epsilondev_xx,realw* b_epsilondev_yy,realw* b_epsilondev_xy,
+                                             realw* b_epsilondev_xz,realw* b_epsilondev_yz,
+                                             realw* b_epsilondev_trace,
+                                             int* size_epsilondev) {}
+
+void FC_FUNC_(transfer_b_eps_trace_from_device,
+              TRANSFER_B_EPS_TRACE_FROM_DEVICE)(long* Mesh_pointer, realw* b_eps_trace, int* size_eps) {}
+
+void FC_FUNC_(transfer_b_eps_trace_to_device,
+              TRANSFER_B_EPS_TRACE_TO_DEVICE)(long* Mesh_pointer, realw* b_eps_trace, int* size_eps) {}
+
+void FC_FUNC_(transfer_kernels_el_to_device,
+              TRANSFER_KERNELS_EL_TO_DEVICE)(long* Mesh_pointer,
+                                             realw* h_rho_kl, realw* h_mu_kl, realw* h_kappa_kl,
+                                             realw* h_cijkl_kl, int* NSPEC_AB) {}
+
+void FC_FUNC_(transfer_kernels_ac_to_device,
+              TRANSFER_KERNELS_AC_TO_DEVICE)(long* Mesh_pointer,realw* h_rho_ac_kl,
+                                             realw* h_kappa_ac_kl,int* NSPEC_AB) {}
+
+void FC_FUNC_(transfer_kernels_hess_el_todevice,
+              TRANSFER_KERNELS_HESS_EL_TODEVICE)(long* Mesh_pointer, realw* h_hess_kl, realw* h_hess_rho_kl,
+                                                 realw* h_hess_kappa_kl, realw* h_hess_mu_kl, int* NSPEC_AB) {}
+
+void FC_FUNC_(transfer_kernels_hess_ac_todevice,
+              TRANSFER_KERNELS_HESS_AC_TODEVICE)(long* Mesh_pointer, realw* h_hess_ac_kl, realw* h_hess_rho_ac_kl,
+                                                 realw* h_hess_kappa_ac_kl, int* NSPEC_AB) {}
+
+void FC_FUNC_(transfer_seismograms_from_device,
+              TRANSFER_SEISMOGRAMS_FROM_DEVICE)(long* Mesh_pointer,
+                                                realw* seismograms_d,realw* seismograms_v,realw* seismograms_a,
+                                                realw* seismograms_p_raw,
+                                                int* size_dva, int* size_p) {}
+
+void FC_FUNC_(transfer_seismograms_to_device,
+              TRANSFER_SEISMOGRAMS_TO_DEVICE)(long* Mesh_pointer,
+                                              realw* seismograms_d,realw* seismograms_v,realw* seismograms_a,
+                                              realw* seismograms_p_raw,
+                                              int* size_dva, int* size_p) {}
+
+void FC_FUNC_(transfer_rmemory_to_device,
+              TRANSFER_RMEMORY_TO_DEVICE)(long* Mesh_pointer,
+                                          realw* R_xx,realw* R_yy,realw* R_xy,realw* R_xz,realw* R_yz,
+                                          realw* R_trace,
+                                          int* size_R) {}
+
+void FC_FUNC_(transfer_strain_to_device,
+              TRANSFER_STRAIN_TO_DEVICE)(long* Mesh_pointer,
+                                         realw* epsilondev_xx,realw* epsilondev_yy,realw* epsilondev_xy,
+                                         realw* epsilondev_xz,realw* epsilondev_yz,
+                                         realw* epsilondev_trace,
+                                         int* size_epsilondev) {}
+
 void FC_FUNC_(transfer_rmemory_from_device,
               TRANSFER_RMEMORY_FROM_DEVICE)(long* Mesh_pointer,
                                             realw* R_xx,realw* R_yy,realw* R_xy,realw* R_xz,realw* R_yz,

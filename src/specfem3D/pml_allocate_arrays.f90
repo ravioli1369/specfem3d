@@ -289,7 +289,7 @@
                             filesize)
 
       else
-        call open_file_abs_w(0,trim(prname)//'absorb_PML_field.bin', &
+        call checkpoint_open_abs_w(0,trim(prname)//'absorb_PML_field.bin', &
                             len_trim(trim(prname)//'absorb_PML_field.bin'), &
                             filesize)
       endif
@@ -335,7 +335,7 @@
                             filesize)
 
       else
-        call open_file_abs_w(1,trim(prname)//'absorb_PML_potential.bin', &
+        call checkpoint_open_abs_w(1,trim(prname)//'absorb_PML_potential.bin', &
                             len_trim(trim(prname)//'absorb_PML_potential.bin'), &
                             filesize)
       endif

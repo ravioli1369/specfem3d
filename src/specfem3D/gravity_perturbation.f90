@@ -55,6 +55,7 @@ module gravity_perturbation
   logical, save :: GRAVITY_SIMULATION = .false.
 
   public :: gravity_init, gravity_init_device, gravity_timeseries, gravity_output, GRAVITY_SIMULATION
+  public :: gravity_checkpoint_save, gravity_checkpoint_restore
 
 contains
 
@@ -389,6 +390,34 @@ contains
 
 
   end subroutine recompute_jacobian_gravity
+
+!=====================================================================
+
+  subroutine gravity_checkpoint_save(iunit)
+
+! the accE/accN/accZ time series live in memory for the whole run and are only flushed in gravity_output()
+
+  implicit none
+  integer,intent(in) :: iunit
+
+  write(iunit) accE
+  write(iunit) accN
+  write(iunit) accZ
+
+  end subroutine gravity_checkpoint_save
+
+!=====================================================================
+
+  subroutine gravity_checkpoint_restore(iunit)
+
+  implicit none
+  integer,intent(in) :: iunit
+
+  read(iunit) accE
+  read(iunit) accN
+  read(iunit) accZ
+
+  end subroutine gravity_checkpoint_restore
 
 !=====================================================================
 

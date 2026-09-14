@@ -222,6 +222,10 @@ USE_SOURCE_ENCODING             = .false.
 # interval in time steps for writing of seismograms
 NTSTEP_BETWEEN_OUTPUT_SEISMOS   = 10000
 
+# checkpoint/restart: write a restartable checkpoint every N steps (0 = off).
+# a later run in the same directory resumes from it automatically
+NTSTEP_BETWEEN_CHECKPOINTS      = 0
+
 # set to n to reduce the sampling rate of output seismograms by a factor of n
 # defaults to 1, which means no down-sampling
 NTSTEP_BETWEEN_OUTPUT_SAMPLE    = 1

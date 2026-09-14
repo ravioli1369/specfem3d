@@ -1322,7 +1322,7 @@
                               filesize)
         else
           ! opens new file
-          call open_file_abs_w(IOABS,trim(prname)//'absorb_field.bin', &
+          call checkpoint_open_abs_w(IOABS,trim(prname)//'absorb_field.bin', &
                               len_trim(trim(prname)//'absorb_field.bin'), &
                               filesize)
         endif
@@ -1388,7 +1388,7 @@
                               filesize)
         else
           ! opens new file
-          call open_file_abs_w(IOABS_AC,trim(prname)//'absorb_potential.bin', &
+          call checkpoint_open_abs_w(IOABS_AC,trim(prname)//'absorb_potential.bin', &
                               len_trim(trim(prname)//'absorb_potential.bin'), &
                               filesize)
         endif
@@ -1454,10 +1454,10 @@
                               filesize)
         else
           ! opens new file
-          call open_file_abs_w(IOABS,trim(prname)//'absorb_fields.bin', &
+          call checkpoint_open_abs_w(IOABS,trim(prname)//'absorb_fields.bin', &
                               len_trim(trim(prname)//'absorb_fields.bin'), &
                               filesize)
-          call open_file_abs_w(IOABS,trim(prname)//'absorb_fieldw.bin', &
+          call checkpoint_open_abs_w(IOABS,trim(prname)//'absorb_fieldw.bin', &
                               len_trim(trim(prname)//'absorb_fieldw.bin'), &
                               filesize)
         endif

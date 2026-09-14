@@ -89,6 +89,9 @@
     endif
   endif
 
+  ! the run completed, so both checkpoint slots are stale
+  call checkpoint_cleanup()
+
   ! coupling
   if (COUPLE_WITH_INJECTION_TECHNIQUE) call couple_with_injection_cleanup()
 

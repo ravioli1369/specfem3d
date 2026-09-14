@@ -82,6 +82,7 @@ specfem3D_OBJECTS = \
 	$O/convert_time.spec.o \
 	$O/couple_with_injection.spec.o \
 	$O/calendar.spec.o \
+	$O/checkpoint.spec.o \
 	$O/create_color_image.spec.o \
 	$O/detect_mesh_surfaces.spec.o \
 	$O/fault_solver_common.spec.o \
@@ -353,6 +354,7 @@ $O/prepare_gpu.spec.o: $O/fault_solver_dynamic.spec.o $O/fault_solver_kinematic.
 ## gravity
 $O/finalize_simulation.spec.o: $O/gravity_perturbation.spec.o
 $O/iterate_time.spec.o: $O/gravity_perturbation.spec.o
+$O/checkpoint.spec.o: $O/gravity_perturbation.spec.o
 $O/iterate_time_undoatt.spec.o: $O/gravity_perturbation.spec.o
 $O/prepare_gravity.spec.o: $O/gravity_perturbation.spec.o
 

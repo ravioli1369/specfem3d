@@ -490,6 +490,10 @@
       write(*,*)
     endif
 
+    ! checkpoint/restart interval; optional, absent means disabled
+    call read_value_integer(NTSTEP_BETWEEN_CHECKPOINTS, 'NTSTEP_BETWEEN_CHECKPOINTS', ier)
+    if (ier /= 0) NTSTEP_BETWEEN_CHECKPOINTS = 0
+
     call read_value_logical(SAVE_SEISMOGRAMS_DISPLACEMENT, 'SAVE_SEISMOGRAMS_DISPLACEMENT', ier)
     if (ier /= 0) then
       some_parameters_missing_from_Par_file = .true.
@@ -1528,6 +1532,7 @@
 
   ! seismograms
   call bcast_all_singlei(NTSTEP_BETWEEN_OUTPUT_SEISMOS)
+  call bcast_all_singlei(NTSTEP_BETWEEN_CHECKPOINTS)
 
   call bcast_all_singlel(SAVE_SEISMOGRAMS_DISPLACEMENT)
   call bcast_all_singlel(SAVE_SEISMOGRAMS_VELOCITY)

@@ -403,6 +403,10 @@
   call setup_sources_receivers()
 
   ! sets up and precomputes simulation arrays
+  ! checkpoint/restart: must run before prepare_timerun opens the absorbing-record files
+  call checkpoint_check_supported()
+  call checkpoint_check_restart()
+
   call prepare_timerun()
 
 #ifdef VTK_VIS

@@ -242,6 +242,43 @@ void open_file_abs_w_fbin(int *fid, char *filename, int *length, long long *file
   free(fncopy);
 }
 
+void open_file_abs_rw_fbin(int *fid, char *filename, int *length, long long *filesize){
+// opens an existing file for read/write without truncating it, creating it if absent
+
+  char * fncopy;
+  char * blank;
+  FILE *ft;
+
+  // checks filesize
+  if (*filesize == 0){
+    perror("Error file size for writing");
+    exit(EXIT_FAILURE);
+  }
+
+  // Trim trailing blanks in filename
+  fncopy = (char *) malloc(*length + 1);
+  strncpy(fncopy, filename, *length);
+  fncopy[*length] = '\0';
+  blank = strchr(fncopy, ' ');
+  if (blank != NULL) {
+    fncopy[blank - fncopy] = '\0';
+  }
+
+  ft = fopen(fncopy, "rb+");
+  if (ft == NULL) { ft = fopen(fncopy, "wb+"); }
+  if (ft == NULL) {
+    fprintf(stderr, "Error opening file for read/write: %s\n", fncopy);
+    exit(EXIT_FAILURE);
+  }
+
+  work_buffer[*fid] = (char *) malloc(MAX_B);
+  setvbuf(ft, work_buffer[*fid], _IOFBF, (size_t) MAX_B);
+
+  fp_abs[*fid] = ft;
+
+  free(fncopy);
+}
+
 void close_file_abs_fbin(int * fid){
 // closes file
 
@@ -255,9 +292,19 @@ void write_abs_fbin(int *fid, char *buffer, int *length, int *index){
 
   FILE *ft;
   int itemlen,remlen,donelen,ret;
+  long long pos;
 
   // file pointer
   ft = fp_abs[*fid];
+
+  // positions file pointer by record index, so a restart resumes on the right record grid
+  pos = ((long long)*length) * (*index - 1);
+
+  ret = fseek(ft, pos, SEEK_SET);
+  if (ret != 0) {
+    perror("Error fseek in write_abs_fbin");
+    exit(EXIT_FAILURE);
+  }
 
   donelen = 0;
   remlen = *length;
@@ -560,6 +607,17 @@ FC_FUNC_(open_file_abs_r,OPEN_FILE_ABS_R)(int *fid, char *filename,int *length, 
   open_file_abs_r_map(fid,filename,length,filesize);
 #else
   open_file_abs_r_fbin(fid,filename,length,filesize);
+#endif
+
+}
+
+void
+FC_FUNC_(open_file_abs_rw,OPEN_FILE_ABS_RW)(int *fid, char *filename,int *length, long long *filesize) {
+
+#ifdef   USE_MAP_FUNCTION
+  open_file_abs_w_map(fid,filename,length,filesize);
+#else
+  open_file_abs_rw_fbin(fid,filename,length,filesize);
 #endif
 
 }

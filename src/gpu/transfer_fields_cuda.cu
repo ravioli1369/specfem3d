@@ -371,6 +371,268 @@ void FC_FUNC_(transfer_pml_displ_to_device,
 // backward/reconstructed wavefields
 
 extern EXTERN_LANG
+void FC_FUNC_(transfer_b_rmemory_from_device,
+              TRANSFER_B_RMEMORY_FROM_DEVICE)(long* Mesh_pointer,
+                                              realw* b_R_xx,realw* b_R_yy,realw* b_R_xy,
+                                              realw* b_R_xz,realw* b_R_yz,
+                                              realw* b_R_trace,
+                                              int* size_R) {
+
+  TRACE("transfer_b_rmemory_from_device");
+
+  Mesh* mp = (Mesh*)(*Mesh_pointer);
+
+  gpuMemcpy_tohost_realw(b_R_xx,mp->d_b_R_xx,*size_R);
+  gpuMemcpy_tohost_realw(b_R_yy,mp->d_b_R_yy,*size_R);
+  gpuMemcpy_tohost_realw(b_R_xy,mp->d_b_R_xy,*size_R);
+  gpuMemcpy_tohost_realw(b_R_xz,mp->d_b_R_xz,*size_R);
+  gpuMemcpy_tohost_realw(b_R_yz,mp->d_b_R_yz,*size_R);
+  gpuMemcpy_tohost_realw(b_R_trace,mp->d_b_R_trace,*size_R);
+
+  GPU_ERROR_CHECKING("after transfer_b_rmemory_from_device");
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+
+extern EXTERN_LANG
+void FC_FUNC_(transfer_b_strain_from_device,
+              TRANSFER_B_STRAIN_FROM_DEVICE)(long* Mesh_pointer,
+                                             realw* b_epsilondev_xx,realw* b_epsilondev_yy,realw* b_epsilondev_xy,
+                                             realw* b_epsilondev_xz,realw* b_epsilondev_yz,
+                                             realw* b_epsilondev_trace,
+                                             int* size_epsilondev) {
+
+  TRACE("transfer_b_strain_from_device");
+
+  Mesh* mp = (Mesh*)(*Mesh_pointer);
+
+  gpuMemcpy_tohost_realw(b_epsilondev_xx,mp->d_b_epsilondev_xx,*size_epsilondev);
+  gpuMemcpy_tohost_realw(b_epsilondev_yy,mp->d_b_epsilondev_yy,*size_epsilondev);
+  gpuMemcpy_tohost_realw(b_epsilondev_xy,mp->d_b_epsilondev_xy,*size_epsilondev);
+  gpuMemcpy_tohost_realw(b_epsilondev_xz,mp->d_b_epsilondev_xz,*size_epsilondev);
+  gpuMemcpy_tohost_realw(b_epsilondev_yz,mp->d_b_epsilondev_yz,*size_epsilondev);
+  gpuMemcpy_tohost_realw(b_epsilondev_trace,mp->d_b_epsilondev_trace,*size_epsilondev);
+
+  GPU_ERROR_CHECKING("after transfer_b_strain_from_device");
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+
+extern EXTERN_LANG
+void FC_FUNC_(transfer_b_eps_trace_from_device,
+              TRANSFER_B_EPS_TRACE_FROM_DEVICE)(long* Mesh_pointer, realw* b_eps_trace, int* size_eps) {
+
+  TRACE("transfer_b_eps_trace_from_device");
+
+  Mesh* mp = (Mesh*)(*Mesh_pointer);
+
+  gpuMemcpy_tohost_realw(b_eps_trace,mp->d_b_epsilon_trace_over_3,*size_eps);
+
+  GPU_ERROR_CHECKING("after transfer_b_eps_trace_from_device");
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+
+extern EXTERN_LANG
+void FC_FUNC_(transfer_b_eps_trace_to_device,
+              TRANSFER_B_EPS_TRACE_TO_DEVICE)(long* Mesh_pointer, realw* b_eps_trace, int* size_eps) {
+
+  TRACE("transfer_b_eps_trace_to_device");
+
+  Mesh* mp = (Mesh*)(*Mesh_pointer);
+
+  gpuMemcpy_todevice_realw(mp->d_b_epsilon_trace_over_3,b_eps_trace,*size_eps);
+
+  GPU_ERROR_CHECKING("after transfer_b_eps_trace_to_device");
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+
+extern EXTERN_LANG
+void FC_FUNC_(transfer_kernels_el_to_device,
+              TRANSFER_KERNELS_EL_TO_DEVICE)(long* Mesh_pointer,
+                                             realw* h_rho_kl,
+                                             realw* h_mu_kl,
+                                             realw* h_kappa_kl,
+                                             realw* h_cijkl_kl,
+                                             int* NSPEC_AB) {
+
+  TRACE("transfer_kernels_el_to_device");
+
+  Mesh* mp = (Mesh*)(*Mesh_pointer);
+
+  gpuMemcpy_todevice_realw(mp->d_rho_kl,h_rho_kl,*NSPEC_AB*NGLL3);
+
+  if (mp->anisotropic_kl ){
+    gpuMemcpy_todevice_realw(mp->d_cijkl_kl,h_cijkl_kl,*NSPEC_AB*21*NGLL3);
+  }else{
+    gpuMemcpy_todevice_realw(mp->d_mu_kl,h_mu_kl,*NSPEC_AB*NGLL3);
+    gpuMemcpy_todevice_realw(mp->d_kappa_kl,h_kappa_kl,*NSPEC_AB*NGLL3);
+  }
+
+  GPU_ERROR_CHECKING("after transfer_kernels_el_to_device");
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+
+extern EXTERN_LANG
+void FC_FUNC_(transfer_kernels_ac_to_device,
+              TRANSFER_KERNELS_AC_TO_DEVICE)(long* Mesh_pointer,realw* h_rho_ac_kl,realw* h_kappa_ac_kl,int* NSPEC_AB) {
+
+  TRACE("transfer_kernels_ac_to_device");
+
+  Mesh* mp = (Mesh*)(*Mesh_pointer);
+
+  int size = *NSPEC_AB*NGLL3;
+
+  gpuMemcpy_todevice_realw(mp->d_rho_ac_kl,h_rho_ac_kl,size);
+  gpuMemcpy_todevice_realw(mp->d_kappa_ac_kl,h_kappa_ac_kl,size);
+
+  GPU_ERROR_CHECKING("after transfer_kernels_ac_to_device");
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+
+extern EXTERN_LANG
+void FC_FUNC_(transfer_kernels_hess_el_todevice,
+              TRANSFER_KERNELS_HESS_EL_TODEVICE)(long* Mesh_pointer,
+                                                 realw* h_hess_kl,
+                                                 realw* h_hess_rho_kl,
+                                                 realw* h_hess_kappa_kl,
+                                                 realw* h_hess_mu_kl,
+                                                 int* NSPEC_AB) {
+
+  TRACE("transfer_kernels_hess_el_todevice");
+
+  Mesh* mp = (Mesh*)(*Mesh_pointer);
+
+  gpuMemcpy_todevice_realw(mp->d_hess_el_kl,h_hess_kl,NGLL3*(*NSPEC_AB));
+  gpuMemcpy_todevice_realw(mp->d_hess_rho_el_kl,h_hess_rho_kl,NGLL3*(*NSPEC_AB));
+  gpuMemcpy_todevice_realw(mp->d_hess_kappa_el_kl,h_hess_kappa_kl,NGLL3*(*NSPEC_AB));
+  gpuMemcpy_todevice_realw(mp->d_hess_mu_el_kl,h_hess_mu_kl,NGLL3*(*NSPEC_AB));
+
+  GPU_ERROR_CHECKING("after transfer_kernels_hess_el_todevice");
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+
+extern EXTERN_LANG
+void FC_FUNC_(transfer_kernels_hess_ac_todevice,
+              TRANSFER_KERNELS_HESS_AC_TODEVICE)(long* Mesh_pointer,
+                                                 realw* h_hess_ac_kl,
+                                                 realw* h_hess_rho_ac_kl,
+                                                 realw* h_hess_kappa_ac_kl,
+                                                 int* NSPEC_AB) {
+
+  TRACE("transfer_kernels_hess_ac_todevice");
+
+  Mesh* mp = (Mesh*)(*Mesh_pointer);
+
+  gpuMemcpy_todevice_realw(mp->d_hess_ac_kl,h_hess_ac_kl,NGLL3*(*NSPEC_AB));
+  gpuMemcpy_todevice_realw(mp->d_hess_rho_ac_kl,h_hess_rho_ac_kl,NGLL3*(*NSPEC_AB));
+  gpuMemcpy_todevice_realw(mp->d_hess_kappa_ac_kl,h_hess_kappa_ac_kl,NGLL3*(*NSPEC_AB));
+
+  GPU_ERROR_CHECKING("after transfer_kernels_hess_ac_todevice");
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+
+extern EXTERN_LANG
+void FC_FUNC_(transfer_seismograms_from_device,
+              TRANSFER_SEISMOGRAMS_FROM_DEVICE)(long* Mesh_pointer,
+                                                realw* seismograms_d,realw* seismograms_v,realw* seismograms_a,
+                                                realw* seismograms_p_raw,
+                                                int* size_dva, int* size_p) {
+
+  TRACE("transfer_seismograms_from_device");
+
+  Mesh* mp = (Mesh*)(*Mesh_pointer);
+
+  if (mp->nrec_local <= 0) return;
+
+  if (mp->save_seismograms_d) gpuMemcpy_tohost_realw(seismograms_d,mp->d_seismograms_d,*size_dva);
+  if (mp->save_seismograms_v) gpuMemcpy_tohost_realw(seismograms_v,mp->d_seismograms_v,*size_dva);
+  if (mp->save_seismograms_a) gpuMemcpy_tohost_realw(seismograms_a,mp->d_seismograms_a,*size_dva);
+  if (mp->save_seismograms_p) gpuMemcpy_tohost_realw(seismograms_p_raw,(realw*)mp->d_seismograms_p,*size_p);
+
+  GPU_ERROR_CHECKING("after transfer_seismograms_from_device");
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+
+extern EXTERN_LANG
+void FC_FUNC_(transfer_seismograms_to_device,
+              TRANSFER_SEISMOGRAMS_TO_DEVICE)(long* Mesh_pointer,
+                                              realw* seismograms_d,realw* seismograms_v,realw* seismograms_a,
+                                              realw* seismograms_p_raw,
+                                              int* size_dva, int* size_p) {
+
+  TRACE("transfer_seismograms_to_device");
+
+  Mesh* mp = (Mesh*)(*Mesh_pointer);
+
+  if (mp->nrec_local <= 0) return;
+
+  if (mp->save_seismograms_d) gpuMemcpy_todevice_realw(mp->d_seismograms_d,seismograms_d,*size_dva);
+  if (mp->save_seismograms_v) gpuMemcpy_todevice_realw(mp->d_seismograms_v,seismograms_v,*size_dva);
+  if (mp->save_seismograms_a) gpuMemcpy_todevice_realw(mp->d_seismograms_a,seismograms_a,*size_dva);
+  if (mp->save_seismograms_p) gpuMemcpy_todevice_realw((realw*)mp->d_seismograms_p,seismograms_p_raw,*size_p);
+
+  GPU_ERROR_CHECKING("after transfer_seismograms_to_device");
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+
+extern EXTERN_LANG
+void FC_FUNC_(transfer_rmemory_to_device,
+              TRANSFER_RMEMORY_TO_DEVICE)(long* Mesh_pointer,
+                                          realw* R_xx,realw* R_yy,realw* R_xy,realw* R_xz,realw* R_yz,
+                                          realw* R_trace,
+                                          int* size_R) {
+
+  TRACE("transfer_rmemory_to_device");
+
+  //get mesh pointer out of fortran integer container
+  Mesh* mp = (Mesh*)(*Mesh_pointer);
+
+  gpuMemcpy_todevice_realw(mp->d_R_xx,R_xx,*size_R);
+  gpuMemcpy_todevice_realw(mp->d_R_yy,R_yy,*size_R);
+  gpuMemcpy_todevice_realw(mp->d_R_xy,R_xy,*size_R);
+  gpuMemcpy_todevice_realw(mp->d_R_xz,R_xz,*size_R);
+  gpuMemcpy_todevice_realw(mp->d_R_yz,R_yz,*size_R);
+  gpuMemcpy_todevice_realw(mp->d_R_trace,R_trace,*size_R);
+
+  GPU_ERROR_CHECKING("after transfer_rmemory_to_device");
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+
+extern EXTERN_LANG
+void FC_FUNC_(transfer_strain_to_device,
+              TRANSFER_STRAIN_TO_DEVICE)(long* Mesh_pointer,
+                                         realw* epsilondev_xx,realw* epsilondev_yy,realw* epsilondev_xy,
+                                         realw* epsilondev_xz,realw* epsilondev_yz,
+                                         realw* epsilondev_trace,
+                                         int* size_epsilondev) {
+
+  TRACE("transfer_strain_to_device");
+
+  //get mesh pointer out of fortran integer container
+  Mesh* mp = (Mesh*)(*Mesh_pointer);
+
+  gpuMemcpy_todevice_realw(mp->d_epsilondev_xx,epsilondev_xx,*size_epsilondev);
+  gpuMemcpy_todevice_realw(mp->d_epsilondev_yy,epsilondev_yy,*size_epsilondev);
+  gpuMemcpy_todevice_realw(mp->d_epsilondev_xy,epsilondev_xy,*size_epsilondev);
+  gpuMemcpy_todevice_realw(mp->d_epsilondev_xz,epsilondev_xz,*size_epsilondev);
+  gpuMemcpy_todevice_realw(mp->d_epsilondev_yz,epsilondev_yz,*size_epsilondev);
+  gpuMemcpy_todevice_realw(mp->d_epsilondev_trace,epsilondev_trace,*size_epsilondev);
+
+  GPU_ERROR_CHECKING("after transfer_strain_to_device");
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+
+extern EXTERN_LANG
 void FC_FUNC_(transfer_b_rmemory_to_device,
               TRANSFER_B_RMEMORY_TO_DEVICE)(long* Mesh_pointer,
                                             realw* b_R_xx,realw* b_R_yy,realw* b_R_xy,
