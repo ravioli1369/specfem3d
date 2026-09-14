@@ -1,0 +1,14 @@
+# stations file
+# format:
+#station_ID #network_ID #lat #lon #elevation(ignored) #burial_depth
+VOGT	LE	48.081382	7.669949	0.0	0.0
+X1      DB      48.04           7.83            0.0     0.0
+X2      DB      48.02           7.83            0.0     0.0
+X3      DB      48.00           7.83            0.0     0.0
+X4      DB      47.98           7.83            0.0     0.0
+X5      DB      47.96           7.83            0.0     0.0
+Y1      DB      48.00           7.79            0.0     0.0
+Y2      DB      48.00           7.81            0.0     0.0
+Y3      DB      48.00           7.83            0.0    50.0
+Y4      DB      48.00           7.85            0.0     0.0
+Y5      DB      48.00           7.87            0.0     0.0

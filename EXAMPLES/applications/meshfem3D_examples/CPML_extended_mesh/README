@@ -1,0 +1,17 @@
+----------------------------------------------------------------------
+README
+----------------------------------------------------------------------
+
+This example creates a small mesh with regular elements and surrounded by a C-PML absorbing boundary.
+The PML boundary layers are added as extensions to the (original) mesh by default, using the 'ADD_PML_AS_EXTRA_MESH_LAYERS' parameter.
+
+For comparison the DATA/meshfem3D_files/Mesh_Par_file.inscribed could be used to define the same PML boundary, but using elements 
+defined within the (original) mesh dimension specification.
+
+To run this simulation, type:
+> ./run_this_example.sh
+
+
+Compare your seismograms in OUTPUT_FILES/ with the reference ones in directory REF_SEIS/
+
+

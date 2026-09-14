@@ -1,0 +1,20 @@
+#
+# FK input file -- SH plane-wave injection, homogeneous half-space
+#
+# for each layer:  LAYER ilayer rho vp vs ztop   (last layer = homogeneous half-space)
+#
+# model description -----------------------------------------
+NLAYER             1
+LAYER 1 2720. 5800. 3460.  0.
+#------------------------------------------------------------
+# incident wave: p, sv or sh
+INCIDENT_WAVE      sh
+#------------------------------------------------------------
+# angles of incoming wave (deg)
+AZIMUTH            0.
+TAKE_OFF           30.
+#------------------------------------------------------------
+AMPLITUDE          1.0
+FREQUENCY_MAX      0.25
+TIME_WINDOW        100.
+ORIGIN_TIME        0.

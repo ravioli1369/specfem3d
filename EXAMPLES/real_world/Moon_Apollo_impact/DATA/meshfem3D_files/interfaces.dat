@@ -1,0 +1,34 @@
+# number of interfaces
+4  
+
+# We describe each interface below, structured as a 2D-grid, with several parameters : 
+# number of points along XI and ETA, minimal XI ETA coordinates 
+# and spacing between points which must be constant.
+# Then the records contain the Z coordinates of the NXI x NETA points.
+#
+# interface moho
+# SUPPRESS_UTM_PROJECTION  NXI  NETA LONG_MIN   LAT_MIN    SPACING_XI SPACING_ETA
+.true.                     2    2    68634.88   155340.91  0.0045     -0.0045
+interface.moho.dat
+
+# interface intermediate 
+.true.                     2    2    68634.88   155340.91  0.0045     -0.0045
+interface.inter.dat
+
+# interface at 1km depth
+.false. 203 205 -30.0 5.1 0.05000000000000071 -0.04999999999999982
+ptopo.xyz.2.dat
+
+# interface (topography, top of the mesh)
+.false. 203 205 -30.0 5.1 0.05000000000000071 -0.04999999999999982
+ptopo.xyz.1.dat
+
+# for each layer, we give the number of spectral elements in the vertical direction
+# layer number 1 (mantle layer)
+ 5 
+# layer number 2 (crust layer)
+ 7 
+# layer number 3 (crust layer)
+ 2 
+# layer number 4 (top layer)
+ 1 

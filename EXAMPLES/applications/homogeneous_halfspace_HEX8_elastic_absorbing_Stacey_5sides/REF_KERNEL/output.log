@@ -1,0 +1,366 @@
+running example: Thu Nov 14 09:35:04 UTC 2024
+
+setting up example...
+
+'DATA/Par_file' -> 'DATA/Par_file.org'
+
+decomposing mesh...
+
+
+ **********************
+ Serial mesh decomposer
+ **********************
+
+ reading mesh files in: ./MESH-default
+
+   using NGNOD =            8
+   linear elements
+
+ total number of nodes:
+   nnodes =        23273
+ total number of spectral elements:
+   nspec =        20736
+ materials:
+   num_mat =            1
+   defined =            1 undefined =            0
+   no poroelastic material file found
+   defined materials  :            1
+   undefined materials:            1  (interfaces/tomography models/..)
+ absorbing boundaries:
+   nspec2D_xmin =          576
+   nspec2D_xmax =          576
+   nspec2D_ymin =          576
+   nspec2D_ymax =          576
+   nspec2D_bottom =         1296
+   nspec2D_top =         1296
+   no absorbing_cpml_file file found
+   no moho_surface_file file found
+
+ Par_file_faults not found: assuming that there are no faults
+
+ node valence:
+   min =            1  max =            8
+ neighbors:
+   nsize =            8
+   valence: sup_neighbor =           38 max_neighbor =           26
+
+ local time stepping: turned OFF
+
+ partitioning:
+   number of partitions requested =            4
+
+   array size xadj  :        20737  memory:    7.91053772E-02 MB
+   array size adjncy:       539136  memory:    2.05664062     MB
+   sup_neighbor     :           26
+
+   mesh2dual: max_neighbor =           26
+
+
+ partitioning type:            1
+   running SCOTCH partitioning
+
+ SCOTCH partitioning
+ finished partitioning
+
+   written file: OUTPUT_FILES/DATABASES_MPI/part_array.vtk
+
+ element distribution:
+   partition            0        has         5137  elements
+   partition            1        has         5168  elements
+   partition            2        has         5200  elements
+   partition            3        has         5231  elements
+   elements per partition: min/max   =         5137        5231
+   elements per partition: imbalance =    1.79697955     %
+                           (0% being totally balanced, 100% being unbalanced)
+
+ load distribution:
+   element loads: min/max =           41          41
+
+   partition            0        has       210617  load units
+   partition            1        has       211888  load units
+   partition            2        has       213200  load units
+   partition            3        has       214471  load units
+   load per partition: min/max   =       210617      214471
+   load per partition: imbalance =    1.79697955     %
+                       (0% being totally balanced, 100% being unbalanced)
+
+ partitions:
+   num         =            4
+   ninterfaces =            6
+
+   partition            0 has number of MPI interfaces:            2 maximum size        2392
+   partition            1 has number of MPI interfaces:            3 maximum size        2392
+   partition            2 has number of MPI interfaces:            2 maximum size        2392
+   partition            3 has number of MPI interfaces:            3 maximum size        2392
+
+ Databases files in directory: OUTPUT_FILES/DATABASES_MPI
+
+
+ finished successfully
+
+
+running database generation on  4 processors...
+
+#########################################################
+forward simulation
+#########################################################
+(running forward simulation with saving forward wavefield)
+
+Changed simulation_type to 1 and save_forward = .true. in Par_file
+
+running solver on  4 processors...
+
+#########################################################
+adjoint sources
+#########################################################
+setting up adjoint sources
+
+
+adjoint sources:
+  window start/end = 10.0 / 24.0
+
+'OUTPUT_FILES/DB.X20.BXX.semd' -> 'SEM/DB.X20.BXX.semd'
+'OUTPUT_FILES/DB.X20.BXY.semd' -> 'SEM/DB.X20.BXY.semd'
+'OUTPUT_FILES/DB.X20.BXZ.semd' -> 'SEM/DB.X20.BXZ.semd'
+compiling xcreate_adjsrc_traveltime:
+  using fortran compiler = gfortran
+  using C compiler       = gcc
+
+gfortran  -o xcreate_adjsrc_traveltime create_adjsrc_traveltime.o rw_ascfile_c.o
+'xcreate_adjsrc_traveltime' -> '/home/myuser/EXAMPLES/applications/homogeneous_halfspace/SEM/xcreate_adjsrc_traveltime'
+
+running adjoint source creation
+
+ xcreate_adjsrc_traveltime:
+   measurement window start/end =    10.000000000000000      /   24.000000000000000
+   component ifile =            3   lrot =  F
+
+ reading asc file DB.X20.BXX.semd ...
+ reading asc file DB.X20.BXY.semd ...
+ reading asc file DB.X20.BXZ.semd ...
+
+ start time:  -10.000000000000000
+ time step:   5.0000190000000444E-002
+ number of steps:         700
+
+ i =            1 norm =    5.7606528005199849
+   component set to zero
+ i =            2 norm =    15.017517352478269
+   component set to zero
+ i =            3 norm =    1.3877010232283336
+
+ write to asc file DB.X20.BXX.adj
+ write to asc file DB.X20.BXY.adj
+ write to asc file DB.X20.BXZ.adj
+
+'./STATIONS_ADJOINT' -> '../DATA/STATIONS_ADJOINT'
+
+
+#########################################################
+kernel simulation
+#########################################################
+(running kernel simulation: SIMULATION_TYPE == 3)
+
+Changed simulation_type to 3 in Par_file
+
+running solver (kernel run) on  4 processors...
+
+
+kernels done
+
+
+#########################################################
+Visualization
+#########################################################
+
+ Recombining ParaView data for slices
+
+ combine volumetric data
+   mesh topology dir : OUTPUT_FILES/DATABASES_MPI
+   input file    dir : rho_kernel
+
+   output directory  : OUTPUT_FILES/
+   using VTK format for file output
+
+ Slice list:
+           0           1           2           3
+
+
+ VTK initial total points:      1387132
+ VTK initial total elements:      1327104
+
+
+ Reading slice            0
+   file: OUTPUT_FILES/DATABASES_MPI/proc000000_rho_kernel.bin
+   min/max value:   -1.53627187E-12   1.84511586E-12
+
+   points:           0      343557
+
+ Reading slice            1
+   file: OUTPUT_FILES/DATABASES_MPI/proc000001_rho_kernel.bin
+   min/max value:   -3.98493460E-09   3.18577920E-09
+
+   points:      343557      345865
+
+ Reading slice            2
+   file: OUTPUT_FILES/DATABASES_MPI/proc000002_rho_kernel.bin
+   min/max value:   -1.02608616E-11   4.32215097E-11
+
+   points:      689422      347685
+
+ Reading slice            3
+   file: OUTPUT_FILES/DATABASES_MPI/proc000003_rho_kernel.bin
+   min/max value:   -3.98493460E-09   3.59137192E-10
+
+   points:     1037107      350025
+
+ Total number of points:      1387132
+
+ Reading slice            0
+   elements:       328768      328768
+   points  :       343557      343557
+ Reading slice            1
+   elements:       659520      330752
+   points  :       689422      345865
+ Reading slice            2
+   elements:       992320      332800
+   points  :      1037107      347685
+ Reading slice            3
+   elements:      1327104      334784
+   points  :      1387132      350025
+
+ Total number of elements:      1327104
+
+
+ Done writing OUTPUT_FILES//rho_kernel.vtk
+
+
+ Recombining ParaView data for slices
+
+ combine volumetric data
+   mesh topology dir : OUTPUT_FILES/DATABASES_MPI
+   input file    dir : kappa_kernel
+
+   output directory  : OUTPUT_FILES/
+   using VTK format for file output
+
+ Slice list:
+           0           1           2           3
+
+
+ VTK initial total points:      1387132
+ VTK initial total elements:      1327104
+
+
+ Reading slice            0
+   file: OUTPUT_FILES/DATABASES_MPI/proc000000_kappa_kernel.bin
+   min/max value:   -2.09085418E-12   4.30854354E-12
+
+   points:           0      343557
+
+ Reading slice            1
+   file: OUTPUT_FILES/DATABASES_MPI/proc000001_kappa_kernel.bin
+   min/max value:   -9.47914724E-09   5.21300425E-09
+
+   points:      343557      345865
+
+ Reading slice            2
+   file: OUTPUT_FILES/DATABASES_MPI/proc000002_kappa_kernel.bin
+   min/max value:   -1.79466372E-10   2.46384788E-11
+
+   points:      689422      347685
+
+ Reading slice            3
+   file: OUTPUT_FILES/DATABASES_MPI/proc000003_kappa_kernel.bin
+   min/max value:   -2.45610887E-09   9.48201340E-09
+
+   points:     1037107      350025
+
+ Total number of points:      1387132
+
+ Reading slice            0
+   elements:       328768      328768
+   points  :       343557      343557
+ Reading slice            1
+   elements:       659520      330752
+   points  :       689422      345865
+ Reading slice            2
+   elements:       992320      332800
+   points  :      1037107      347685
+ Reading slice            3
+   elements:      1327104      334784
+   points  :      1387132      350025
+
+ Total number of elements:      1327104
+
+
+ Done writing OUTPUT_FILES//kappa_kernel.vtk
+
+
+ Recombining ParaView data for slices
+
+ combine volumetric data
+   mesh topology dir : OUTPUT_FILES/DATABASES_MPI
+   input file    dir : mu_kernel
+
+   output directory  : OUTPUT_FILES/
+   using VTK format for file output
+
+ Slice list:
+           0           1           2           3
+
+
+ VTK initial total points:      1387132
+ VTK initial total elements:      1327104
+
+
+ Reading slice            0
+   file: OUTPUT_FILES/DATABASES_MPI/proc000000_mu_kernel.bin
+   min/max value:   -3.46212252E-12   2.90256816E-12
+
+   points:           0      343557
+
+ Reading slice            1
+   file: OUTPUT_FILES/DATABASES_MPI/proc000001_mu_kernel.bin
+   min/max value:   -3.56344572E-08   1.08928919E-08
+
+   points:      343557      345865
+
+ Reading slice            2
+   file: OUTPUT_FILES/DATABASES_MPI/proc000002_mu_kernel.bin
+   min/max value:   -5.96327987E-11   1.39300280E-10
+
+   points:      689422      347685
+
+ Reading slice            3
+   file: OUTPUT_FILES/DATABASES_MPI/proc000003_mu_kernel.bin
+   min/max value:   -2.03610355E-08   3.89552284E-08
+
+   points:     1037107      350025
+
+ Total number of points:      1387132
+
+ Reading slice            0
+   elements:       328768      328768
+   points  :       343557      343557
+ Reading slice            1
+   elements:       659520      330752
+   points  :       689422      345865
+ Reading slice            2
+   elements:       992320      332800
+   points  :      1037107      347685
+ Reading slice            3
+   elements:      1327104      334784
+   points  :      1387132      350025
+
+ Total number of elements:      1327104
+
+
+ Done writing OUTPUT_FILES//mu_kernel.vtk
+
+
+see results in directory       : OUTPUT_FILES/
+    kernel outputs in directory:  OUTPUT_FILES/DATABASES_MPI
+
+done
+Thu Nov 14 09:38:03 UTC 2024

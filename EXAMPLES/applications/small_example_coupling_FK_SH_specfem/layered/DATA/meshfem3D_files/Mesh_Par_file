@@ -1,0 +1,91 @@
+#-----------------------------------------------------------
+#
+# Meshing input parameters  --  layered crust (SH FK validation)
+#
+#-----------------------------------------------------------
+
+# coordinates of mesh block in latitude/longitude and depth in km
+LATITUDE_MIN                    = -150000.0
+LATITUDE_MAX                    = 150000.0
+LONGITUDE_MIN                   = -150000.0
+LONGITUDE_MAX                    = 150000.0
+DEPTH_BLOCK_KM                  = 250.0
+UTM_PROJECTION_ZONE             = 11
+SUPPRESS_UTM_PROJECTION         = .true.
+
+# file that contains the interfaces of the model / mesh
+INTERFACES_FILE                 = interfaces.dat
+
+# file that contains the cavity
+CAVITY_FILE                     = no_cavity.dat
+
+# number of elements at the surface along edges of the mesh at the surface
+NEX_XI                          = 16
+NEX_ETA                         = 16
+
+# number of MPI processors along xi and eta (can be different)
+NPROC_XI                        = 1
+NPROC_ETA                       = 1
+
+#-----------------------------------------------------------
+#
+# Doubling layers
+#
+#-----------------------------------------------------------
+
+USE_REGULAR_MESH                = .true.
+NDOUBLINGS                      = 0
+NZ_DOUBLING_1                   = 11
+NZ_DOUBLING_2                   = 0
+
+#-----------------------------------------------------------
+#
+# Visualization
+#
+#-----------------------------------------------------------
+
+CREATE_ABAQUS_FILES             = .false.
+CREATE_DX_FILES                 = .false.
+CREATE_VTK_FILES                = .true.
+SAVE_MESH_AS_CUBIT              = .false.
+LOCAL_PATH                      = ./DATABASES_MPI
+
+#-----------------------------------------------------------
+#
+# CPML
+#
+#-----------------------------------------------------------
+
+THICKNESS_OF_X_PML              = 12.3
+THICKNESS_OF_Y_PML              = 12.3
+THICKNESS_OF_Z_PML              = 12.3
+ADD_PML_AS_EXTRA_MESH_LAYERS    = .false.
+NUMBER_OF_PML_LAYERS_TO_ADD     = 3
+
+#-----------------------------------------------------------
+#
+# Domain materials  --  four elastic layers (vs increasing with depth)
+#
+#-----------------------------------------------------------
+
+# number of materials
+NMATERIALS                      = 4
+# #material_id  #rho  #vp  #vs  #Q_Kappa  #Q_mu  #anisotropy_flag  #domain_id
+1  2720  5800  3460  9999. 9999.  0  2
+2  2920  6500  3850  9999. 9999.  0  2
+3  3423  8060  4530  9999. 9999.  0  2
+4  3423  8289  4517  9999. 9999.  0  2
+
+#-----------------------------------------------------------
+#
+# Domain regions  --  layer tops at 0 / -20 / -35 / -120 km
+#
+#-----------------------------------------------------------
+
+# number of regions
+NREGIONS                        = 4
+#NEX_XI_BEGIN  #NEX_XI_END  #NEX_ETA_BEGIN  #NEX_ETA_END  #NZ_BEGIN #NZ_END  #material_id
+1            16              1             16            47            51          1
+1            16              1             16            44            47          2
+1            16              1             16            27            44          3
+1            16              1             16            1            27          4

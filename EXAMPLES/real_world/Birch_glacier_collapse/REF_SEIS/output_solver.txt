@@ -1,0 +1,2553 @@
+ **********************************************
+ **** Specfem 3-D Solver - MPI version f90 ****
+ **********************************************
+
+ Running Git package version of the code: 4.1.1
+ which is Git unknown
+ dating unknown
+
+
+
+
+ There are           16  MPI processes
+ Processes are numbered from 0 to           15
+
+ There is a total of           16  slices
+
+  NDIM =            3
+
+  NGLLX =            5
+  NGLLY =            5
+  NGLLZ =            5
+
+ using single precision for the calculations
+ using force vectorization
+
+ smallest and largest possible floating-point numbers are:   1.1754944E-38
+  3.4028235E+38
+
+ velocity model:   default
+
+
+ GPU_MODE Active.
+ GPU number of devices per node: min =           1
+                                 max =           8
+
+ Reading mesh databases...
+   reads binary mesh files: proc***_external_mesh.bin
+   from directory         : DATABASES_MPI
+
+   simulation w/ acoustic    domain:  F
+   simulation w/ elastic     domain:  T
+   simulation w/ poroelastic domain:  F
+
+   slice 0 has:
+   number of elements acoustic   :           0
+   number of elements elastic    :       35808
+   number of elements poroelastic:           0
+   done
+
+   total acoustic elements    :           0
+   total elastic elements     :      572928
+   total poroelastic elements :           0
+
+ Mesh resolution:
+
+ ********
+ minimum and maximum number of elements
+ and points in the CUBIT + SCOTCH mesh:
+
+ NSPEC_global_min =        35808
+ NSPEC_global_max =        35808
+ NSPEC_global_max / NSPEC_global_min imbalance =    1.000000      =
+  0.0000000E+00  %
+ NSPEC_global_sum =       572928
+
+ NGLOB_global_min =      2347273
+ NGLOB_global_max =      2347273
+ NGLOB_global_max / NGLOB_global_min imbalance =    1.000000      =
+  0.0000000E+00  %
+ NGLOB_global_sum =     37556368
+
+ If you have elements of a single type (all acoustic, all elastic, all poroelast
+ ic, and without CPML)
+ in the whole mesh, then there should be no significant imbalance in the above n
+ umbers.
+ Otherwise, it is normal to have imbalance in elements and points because the do
+ main decomposer
+ compensates for the different cost of different elements by partitioning them u
+ nevenly among processes.
+ ********
+
+
+ ********
+ Model: P   velocity min,max =    1333.146       8100.000
+ Model: S   velocity min,max =    202.2402       4760.000
+
+ Model: Poisson's ratio min,max =   4.8426352E-02  0.4882223
+ ********
+
+ *********************************************
+ *** Verification of simulation parameters ***
+ *********************************************
+
+ *** Xmin and Xmax of the model =    261507.8       614807.4
+ *** Ymin and Ymax of the model =    5065748.       5306794.
+ *** Zmin and Zmax of the model =   -80000.00       4429.021
+
+ *** Max GLL point distance =    7227.812
+ *** Min GLL point distance =    86.33643
+ *** Max/min ratio =    83.71684
+
+ *** Max element size =    22081.25
+ *** Min element size =    499.9998
+ *** Max/min ratio =    44.16252
+
+ *** Minimum period resolved =    8.529856
+ *** Maximum suggested time step =   7.1000000E-03
+
+ *** for DT :   6.000000000000000E-003
+ *** Max stability for wave velocities =   0.4210862
+
+ Elapsed time for checking mesh resolution in seconds =   3.077190800000000E-002
+ saving VTK files for Courant number and minimum period
+
+
+ ******************************************
+ There is a total of           16  slices
+ ******************************************
+
+ movie simulation:
+   shakemap output
+   surface movie
+
+ mesh surfaces:
+   high-resolution  =  T
+   nfaces per slice =         5504        4808        4808        5504
+        4808        4112        4112        4808        4808        4112
+        4112        4808        5504        4808        4808        5504
+
+   total number of surface faces is        76928
+
+ shakemap:
+   movie type 2: maximum length of particle vector
+
+ surface movies:
+   saving: particle velocities
+   number of steps between frames =          100
+
+
+ kd-tree:
+   total data points:       966816
+   theoretical   number of nodes:      1933625
+                tree memory size:    59.00955     MB
+   actual        number of nodes:      1933631
+                tree memory size:    59.00974     MB
+   maximum depth   :           25
+   creation timing :   0.4549227     (s)
+
+
+ sources:            1
+
+ ********************
+  locating sources
+ ********************
+
+ reading source information from ./DATA/FORCESOLUTION file
+
+ UTM projection:
+   UTM zone:           32
+
+
+ source #            1
+   source located in slice            5
+                  in element        32652
+                  in elastic domain
+
+   using force point source:
+     xi coordinate of source in that element:   0.985772078050138
+     eta coordinate of source in that element:  -0.100112933358865
+     gamma coordinate of source in that element:   0.956718747118189
+
+     component of direction vector in East direction:  -0.5000000
+     component of direction vector in North direction:   0.1000000
+     component of direction vector in Vertical direction:   -1.000000
+
+     nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+     nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+     nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+
+     at (x,y,z) coordinates =    410546.213539232        5139615.12183662
+   2649.09960937500
+
+   source time function:
+     using Gaussian source time function
+              half duration:    1.00000000000000       seconds
+     Gaussian half duration:   0.614250614250614       seconds
+
+     time shift:   0.000000000000000E+000  seconds
+
+   magnitude of the source:
+     factor =   1.000000000000000E+015
+
+   original (requested) position of the source:
+
+             latitude:    46.4041880000000
+            longitude:    7.83624200000000
+
+            UTM x:    410546.213539232
+            UTM y:    5139615.12183662
+            depth:   0.000000000000000E+000  km
+   topo elevation:    2649.09960937500
+
+   position of the source that will be used:
+
+            UTM x:    410546.213539232
+            UTM y:    5139615.12183662
+            depth:   0.000000000000000E+000  km
+                z:    2649.09960937500
+
+   error in location of the source:   0.0000000E+00  m
+
+
+
+ maximum error in location of the sources:   0.0000000E+00  m
+
+
+ Elapsed time for detection of sources in seconds =   1.0641649E-02
+
+ End of source detection - done
+
+
+ Each source is being convolved with HDUR_MOVIE =   0.000000000000000E+000
+
+
+ printing the source-time function
+
+ receivers:
+
+   there are           67  stations in file ./DATA/STATIONS_ADJOINT
+   saving           66
+  stations inside the model in file ./DATA/STATIONS_ADJOINT_FILTERED
+   excluding            1  stations located outside the model
+
+   Total number of adjoint sources =           66
+
+
+ ********************
+  locating receivers
+ ********************
+
+ reading receiver information from ./DATA/STATIONS_ADJOINT_FILTERED file
+
+
+ station #            1     CH    BERGE
+      original latitude:    47.87161
+      original longitude:    8.177980
+      original UTM x:    438529.2
+      original UTM y:    5302358.
+      original depth:    1.000000      m
+      horizontal distance:    165.1306
+      target x, y, z:    438529.2       5302358.       917.7603
+      closest estimate found:   9.3313979E-10  m away
+
+      receiver located in slice           14
+                       in element        35489
+                       in elastic domain
+      at coordinates:
+      xi    =  -0.461431516396009
+      eta   =  -0.422378876454389
+      gamma =   0.993517169986174
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    438529.222833952
+      UTM y:    5302357.41514391
+      depth:    1.00000000000000       m
+      z:    917.760253906250
+
+
+
+ station #            2     CH    JAUN
+      original latitude:    46.63395
+      original longitude:    7.290960
+      original UTM x:    369185.6
+      original UTM y:    5165906.
+      original depth:   0.0000000E+00  m
+      horizontal distance:    49.00936
+      target x, y, z:    369185.6       5165906.       1653.210
+      closest estimate found:    7.752698      m away
+
+      receiver located in slice            5
+                       in element        34415
+                       in elastic domain
+      at coordinates:
+      xi    =  -0.953818282371786
+      eta   =  -0.255129490506674
+      gamma =    1.01000000000000
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    369185.616828342
+      UTM y:    5165906.14779234
+      depth:    7.75269864553843       m
+      z:    1645.45726229196
+
+
+
+ station #            3     CH    EMMET
+      original latitude:    47.43757
+      original longitude:    8.013580
+      original UTM x:    425621.6
+      original UTM y:    5254263.
+      original depth:    1.000000      m
+      horizontal distance:    115.6349
+      target x, y, z:    425621.6       5254263.       701.2839
+      closest estimate found:    5.979967      m away
+
+      receiver located in slice           13
+                       in element        32279
+                       in elastic domain
+      at coordinates:
+      xi    =   0.832956967299547
+      eta   =  -0.578028195320037
+      gamma =    1.01000000000000
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    425621.610087342
+      UTM y:    5254263.14322705
+      depth:    6.97996675733555       m
+      z:    695.303907754383
+
+
+
+ station #            4     CH    GRYON
+      original latitude:    46.25053
+      original longitude:    7.111060
+      original UTM x:    354397.7
+      original UTM y:    5123618.
+      original depth:   0.0000000E+00  m
+      horizontal distance:    58.38300
+      target x, y, z:    354397.7       5123618.       1512.638
+      closest estimate found:    21.41309      m away
+
+      receiver located in slice            1
+                       in element        35620
+                       in elastic domain
+      at coordinates:
+      xi    =  -0.384446573013058
+      eta   =  -7.956543236385412E-002
+      gamma =    1.01000000000000
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    354397.657350666
+      UTM y:    5123617.79457271
+      depth:    21.4130931615105       m
+      z:    1491.22533457286
+
+
+
+ station #            5     CH    HASLI
+      original latitude:    46.75673
+      original longitude:    8.151080
+      original UTM x:    435168.2
+      original UTM y:    5178481.
+      original depth:    3.000000      m
+      horizontal distance:    46.00853
+      target x, y, z:    435168.2       5178481.       1101.684
+      closest estimate found:   9.3313979E-10  m away
+
+      receiver located in slice            5
+                       in element        35294
+                       in elastic domain
+      at coordinates:
+      xi    =   0.667733447843307
+      eta   =   0.453753129448686
+      gamma =    1.00083685997500
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    435168.158004017
+      UTM y:    5178480.85428569
+      depth:    3.00000000000000       m
+      z:    1101.68371582031
+
+
+
+ station #            6     CH    SIMPL
+      original latitude:    46.23962
+      original longitude:    8.019580
+      original UTM x:    424412.3
+      original UTM y:    5121138.
+      original depth:   0.0000000E+00  m
+      horizontal distance:    23.10091
+      target x, y, z:    424412.3       5121138.       1959.173
+      closest estimate found:   9.3132257E-10  m away
+
+      receiver located in slice            1
+                       in element        35479
+                       in elastic domain
+      at coordinates:
+      xi    =  -0.919527466600180
+      eta   =   0.654977332946565
+      gamma =    1.00417125728099
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    424412.341062813
+      UTM y:    5121138.58057948
+      depth:   2.273736754432321E-013  m
+      z:    1959.17297363281
+
+
+
+ station #            7     CH    VANNI
+      original latitude:    46.21006
+      original longitude:    7.596780
+      original UTM x:    391757.8
+      original UTM y:    5118344.
+      original depth:   0.0000000E+00  m
+      horizontal distance:    28.38077
+      target x, y, z:    391757.8       5118344.       1499.786
+      closest estimate found:   0.0000000E+00  m away
+
+      receiver located in slice            1
+                       in element        35263
+                       in elastic domain
+      at coordinates:
+      xi    =  -0.242362070823878
+      eta   =   0.718441654878602
+      gamma =   0.980460681942197
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    391757.774435409
+      UTM y:    5118343.95640903
+      depth:   0.000000000000000E+000  m
+      z:    1499.78649902344
+
+
+
+ station #            8     CH    CHASS
+      original latitude:    47.16090
+      original longitude:    7.121290
+      original UTM x:    357601.2
+      original UTM y:    5224757.
+      original depth:   0.0000000E+00  m
+      horizontal distance:    100.2610
+      target x, y, z:    357601.2       5224757.       1232.309
+      closest estimate found:   0.0000000E+00  m away
+
+      receiver located in slice            9
+                       in element        34278
+                       in elastic domain
+      at coordinates:
+      xi    =   0.258158140285502
+      eta   =   0.747805374792246
+      gamma =   0.993040732379842
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    357601.230934239
+      UTM y:    5224756.77938018
+      depth:   0.000000000000000E+000  m
+      z:    1232.30932617188
+
+
+
+ station #            9     CH    LIENZ
+      original latitude:    47.29444
+      original longitude:    9.491773
+      original UTM x:    537181.4
+      original UTM y:    5238002.
+      original depth:   0.0000000E+00  m
+      horizontal distance:    160.3634
+      target x, y, z:    537181.4       5238002.       1459.904
+      closest estimate found:    27.50217      m away
+
+      receiver located in slice           11
+                       in element        35176
+                       in elastic domain
+      at coordinates:
+      xi    =   0.504795929792758
+      eta   =   0.881952170828635
+      gamma =    1.01000000000000
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    537181.403241303
+      UTM y:    5238001.92898442
+      depth:    27.5021670449198       m
+      z:    1432.40151947852
+
+
+
+ station #           10     CH    FUORN
+      original latitude:    46.62033
+      original longitude:    10.26355
+      original UTM x:    596740.1
+      original UTM y:    5163750.
+      original depth:   0.0000000E+00  m
+      horizontal distance:    187.7516
+      target x, y, z:    596740.1       5163750.       2300.973
+      closest estimate found:   9.5998576E-10  m away
+
+      receiver located in slice            7
+                       in element        34323
+                       in elastic domain
+      at coordinates:
+      xi    =   0.817018528942373
+      eta   =  -0.835417730137351
+      gamma =   0.999352954152392
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    596740.112066799
+      UTM y:    5163749.97710354
+      depth:   9.094947017729282E-013  m
+      z:    2300.97338867188
+
+
+
+ station #           11     CH    HAUIG
+      original latitude:    47.66038
+      original longitude:    7.700180
+      original UTM x:    402405.4
+      original UTM y:    5279372.
+      original depth:   0.4000000      m
+      horizontal distance:    139.9941
+      target x, y, z:    402405.4       5279372.       452.0542
+      closest estimate found:   0.0000000E+00  m away
+
+      receiver located in slice           13
+                       in element        33927
+                       in elastic domain
+      at coordinates:
+      xi    =  -0.811922601608455
+      eta   =   0.755357283961993
+      gamma =    1.00318315447553
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    402405.373032309
+      UTM y:    5279372.33444143
+      depth:   0.399999999999977       m
+      z:    452.054193115234
+
+
+
+ station #           12     CH    LKBD2
+      original latitude:    46.37455
+      original longitude:    7.644330
+      original UTM x:    395738.3
+      original UTM y:    5136557.
+      original depth:   0.0000000E+00  m
+      horizontal distance:    15.12038
+      target x, y, z:    395738.3       5136557.       2012.922
+      closest estimate found:    30.73664      m away
+
+      receiver located in slice            5
+                       in element        32450
+                       in elastic domain
+      at coordinates:
+      xi    =  -0.473727842938497
+      eta   =  -0.595584919300797
+      gamma =    1.01000000000000
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    395738.339957380
+      UTM y:    5136556.87839924
+      depth:    30.7366380441649       m
+      z:    1982.18499281521
+
+
+
+ station #           13     CH    MUTEZ
+      original latitude:    47.50647
+      original longitude:    7.648840
+      original UTM x:    398252.8
+      original UTM y:    5262334.
+      original depth:   0.0000000E+00  m
+      horizontal distance:    123.3326
+      target x, y, z:    398252.8       5262334.       453.4968
+      closest estimate found:   9.3313979E-10  m away
+
+      receiver located in slice           13
+                       in element        32772
+                       in elastic domain
+      at coordinates:
+      xi    =  -0.829755797188368
+      eta   =   0.563408037125840
+      gamma =   0.957034394520504
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    398252.820230137
+      UTM y:    5262333.47433348
+      depth:   1.136868377216160E-013  m
+      z:    453.496795654297
+
+
+
+ station #           14     CH    SENIN
+      original latitude:    46.36335
+      original longitude:    7.299380
+      original UTM x:    369182.6
+      original UTM y:    5135824.
+      original depth:   0.0000000E+00  m
+      horizontal distance:    41.53696
+      target x, y, z:    369182.6       5135824.       2077.479
+      closest estimate found:    11.02957      m away
+
+      receiver located in slice            5
+                       in element        32367
+                       in elastic domain
+      at coordinates:
+      xi    =  -0.958245195899867
+      eta   =  -0.150869275757320
+      gamma =    1.01000000000000
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    369182.562119667
+      UTM y:    5135824.72828844
+      depth:    11.0295679525161       m
+      z:    2066.44943595373
+
+
+
+ station #           15     CH    PANIX
+      original latitude:    46.82574
+      original longitude:    9.111708
+      original UTM x:    508520.2
+      original UTM y:    5185806.
+      original depth:   0.0000000E+00  m
+      horizontal distance:    108.3167
+      target x, y, z:    508520.2       5185806.       1579.241
+      closest estimate found:    7.971365      m away
+
+      receiver located in slice            6
+                       in element        35795
+                       in elastic domain
+      at coordinates:
+      xi    =   0.969186136618872
+      eta   =   1.309691440950854E-002
+      gamma =    1.01000000000000
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    508520.236989867
+      UTM y:    5185805.91537246
+      depth:    7.97136558210605       m
+      z:    1571.26984535539
+
+
+
+ station #           16     CH    FLACH
+      original latitude:    47.57241
+      original longitude:    8.567900
+      original UTM x:    467501.9
+      original UTM y:    5268868.
+      original depth:    5.500000      m
+      horizontal distance:    141.2450
+      target x, y, z:    467501.9       5268868.       455.2636
+      closest estimate found:   0.0000000E+00  m away
+
+      receiver located in slice           14
+                       in element        33206
+                       in elastic domain
+      at coordinates:
+      xi    =  -0.474415411261863
+      eta   =   0.442601243469776
+      gamma =   0.974111302473365
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    467501.865503007
+      UTM y:    5268867.60453536
+      depth:    5.50000000000000       m
+      z:    455.263610839844
+
+
+
+ station #           17     CH    VDR
+      original latitude:    46.20610
+      original longitude:    9.166480
+      original UTM x:    512843.0
+      original UTM y:    5116960.
+      original depth:   0.0000000E+00  m
+      horizontal distance:    104.7753
+      target x, y, z:    512843.0       5116960.       1155.381
+      closest estimate found:   9.3313979E-10  m away
+
+      receiver located in slice            2
+                       in element        35223
+                       in elastic domain
+      at coordinates:
+      xi    =  -0.766296961985538
+      eta   =  -0.219747691905412
+      gamma =   0.983546378007372
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    512842.984801060
+      UTM y:    5116960.49883711
+      depth:   0.000000000000000E+000  m
+      z:    1155.38146972656
+
+
+
+ station #           18     CH    SALAN
+      original latitude:    46.14415
+      original longitude:    6.973020
+      original UTM x:    343455.6
+      original UTM y:    5112061.
+      original depth:   0.0000000E+00  m
+      horizontal distance:    72.52853
+      target x, y, z:    343455.6       5112061.       1806.027
+      closest estimate found:   9.3132257E-10  m away
+
+      receiver located in slice            0
+                       in element        34908
+                       in elastic domain
+      at coordinates:
+      xi    =  -0.241631180979921
+      eta   =  -0.627409652559526
+      gamma =   0.888015565800935
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    343455.591283662
+      UTM y:    5112060.89690606
+      depth:   0.000000000000000E+000  m
+      z:    1806.02722167969
+
+
+
+ station #           19     CH    WIMIS
+      original latitude:    46.66488
+      original longitude:    7.624180
+      original UTM x:    394750.9
+      original UTM y:    5168844.
+      original depth:   0.0000000E+00  m
+      horizontal distance:    33.22356
+      target x, y, z:    394750.9       5168844.       837.1069
+      closest estimate found:    10.43395      m away
+
+      receiver located in slice            5
+                       in element        34625
+                       in elastic domain
+      at coordinates:
+      xi    =   9.522222688548269E-002
+      eta   =  -1.594933084410533E-002
+      gamma =    1.01000000000000
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    394750.862562246
+      UTM y:    5168843.74185251
+      depth:    10.4339477099794       m
+      z:    826.672924848614
+
+
+
+ station #           20     CH    MTI02
+      original latitude:    47.37927
+      original longitude:    7.165250
+      original UTM x:    361504.2
+      original UTM y:    5248944.
+      original depth:   0.0000000E+00  m
+      horizontal distance:    119.8250
+      target x, y, z:    361504.2       5248944.       733.5461
+      closest estimate found:   0.0000000E+00  m away
+
+      receiver located in slice           13
+                       in element        31849
+                       in elastic domain
+      at coordinates:
+      xi    =  -8.576045227765623E-002
+      eta   =   0.124637463385763
+      gamma =    1.00771199085084
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    361504.149392907
+      UTM y:    5248944.42308589
+      depth:   0.000000000000000E+000  m
+      z:    733.546142578125
+
+
+
+ station #           21     CH    DIX
+      original latitude:    46.08105
+      original longitude:    7.408391
+      original UTM x:    376938.7
+      original UTM y:    5104284.
+      original depth:   0.0000000E+00  m
+      horizontal distance:    48.76188
+      target x, y, z:    376938.7       5104284.       2550.863
+      closest estimate found:   0.3400560      m away
+
+      receiver located in slice            1
+                       in element        34292
+                       in elastic domain
+      at coordinates:
+      xi    =   0.281881622632944
+      eta   =   0.855477705934202
+      gamma =    1.01000000000000
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    376938.683407818
+      UTM y:    5104284.46613007
+      depth:   0.340056024020214       m
+      z:    2550.52273694473
+
+
+
+ station #           22     CH    AIGLE
+      original latitude:    46.34176
+      original longitude:    6.952950
+      original UTM x:    342472.4
+      original UTM y:    5134057.
+      original depth:   0.0000000E+00  m
+      horizontal distance:    68.30032
+      target x, y, z:    342472.4       5134057.       633.5449
+      closest estimate found:    12.56646      m away
+
+      receiver located in slice            4
+                       in element        32283
+                       in elastic domain
+      at coordinates:
+      xi    =   0.333583950824084
+      eta   =   9.362238936767855E-002
+      gamma =    1.01000000000000
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    342472.433350567
+      UTM y:    5134056.82273979
+      depth:    12.5664572832568       m
+      z:    620.978403556587
+
+
+
+ station #           23     CH    VMV
+      original latitude:    46.42309
+      original longitude:    9.022070
+      original UTM x:    501695.8
+      original UTM y:    5141058.
+      original depth:   0.0000000E+00  m
+      horizontal distance:    91.16106
+      target x, y, z:    501695.8       5141058.       1101.531
+      closest estimate found:    16.42120      m away
+
+      receiver located in slice            6
+                       in element        32719
+                       in elastic domain
+      at coordinates:
+      xi    =  -0.920635372204922
+      eta   =   0.964263618692748
+      gamma =    1.01000000000000
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    501695.859063395
+      UTM y:    5141057.67709850
+      depth:    16.4211982688857       m
+      z:    1085.11005173111
+
+
+
+ station #           24     CH    EMBD
+      original latitude:    46.21652
+      original longitude:    7.832230
+      original UTM x:    409930.5
+      original UTM y:    5118768.
+      original depth:   0.0000000E+00  m
+      horizontal distance:    20.85669
+      target x, y, z:    409930.5       5118768.       1301.974
+      closest estimate found:   0.0000000E+00  m away
+
+      receiver located in slice            1
+                       in element        35340
+                       in elastic domain
+      at coordinates:
+      xi    =   9.343585547092685E-002
+      eta   =  -0.381796156622054
+      gamma =   0.923556517640351
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    409930.473660145
+      UTM y:    5118767.51945927
+      depth:   0.000000000000000E+000  m
+      z:    1301.97363281250
+
+
+
+ station #           25     CH    SAIRA
+      original latitude:    47.30267
+      original longitude:    7.086450
+      original UTM x:    355347.0
+      original UTM y:    5240575.
+      original depth:    2.600000      m
+      horizontal distance:    115.0648
+      target x, y, z:    355347.0       5240575.       917.6371
+      closest estimate found:   9.3313979E-10  m away
+
+      receiver located in slice            9
+                       in element        35364
+                       in elastic domain
+      at coordinates:
+      xi    =   0.991308022099573
+      eta   =   0.347286557494357
+      gamma =   0.955199392987053
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    355346.971013624
+      UTM y:    5240575.23514694
+      depth:    2.59999999999991       m
+      z:    917.637121582031
+
+
+
+ station #           26     CH    TRULL
+      original latitude:    47.64870
+      original longitude:    8.681610
+      original UTM x:    476088.8
+      original UTM y:    5277305.
+      original depth:   0.0000000E+00  m
+      horizontal distance:    152.4937
+      target x, y, z:    476088.8       5277305.       481.4732
+      closest estimate found:   9.3132257E-10  m away
+
+      receiver located in slice           14
+                       in element        33788
+                       in elastic domain
+      at coordinates:
+      xi    =  -3.033325185081575E-002
+      eta   =   0.364093740131368
+      gamma =   0.996224486403297
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    476088.756608309
+      UTM y:    5277304.98815160
+      depth:   5.684341886080801E-014  m
+      z:    481.473175048828
+
+
+
+ station #           27     CH    PLONS
+      original latitude:    47.04921
+      original longitude:    9.380760
+      original UTM x:    528920.9
+      original UTM y:    5210703.
+      original depth:    9.800000      m
+      horizontal distance:    138.0799
+      target x, y, z:    528920.9       5210703.       1000.250
+      closest estimate found:   9.3132257E-10  m away
+
+      receiver located in slice           11
+                       in element        33314
+                       in elastic domain
+      at coordinates:
+      xi    =   0.533744815618345
+      eta   =   0.896974298727129
+      gamma =   0.903873285739493
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    528920.894352302
+      UTM y:    5210703.00065112
+      depth:    9.79999999999995       m
+      z:    1000.25004882813
+
+
+
+ station #           28     CH    NALPS
+      original latitude:    46.59512
+      original longitude:    8.748280
+      original UTM x:    480718.8
+      original UTM y:    5160204.
+      original depth:   0.0000000E+00  m
+      horizontal distance:    73.13055
+      target x, y, z:    480718.8       5160204.       2425.684
+      closest estimate found:   0.0000000E+00  m away
+
+      receiver located in slice            6
+                       in element        34047
+                       in elastic domain
+      at coordinates:
+      xi    =   0.679432904319221
+      eta   =  -0.367508136665350
+      gamma =   0.924828233265808
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    480718.762427398
+      UTM y:    5160203.74554466
+      depth:   0.000000000000000E+000  m
+      z:    2425.68432617188
+
+
+
+ station #           29     CH    BOURR
+      original latitude:    47.39364
+      original longitude:    7.230100
+      original UTM x:    366435.5
+      original UTM y:    5250428.
+      original depth:   0.0000000E+00  m
+      horizontal distance:    119.2696
+      target x, y, z:    366435.5       5250428.       866.4956
+      closest estimate found:   9.3313979E-10  m away
+
+      receiver located in slice           13
+                       in element        31981
+                       in elastic domain
+      at coordinates:
+      xi    =  -0.939227901721877
+      eta   =  -0.724886783232537
+      gamma =   0.999378721922231
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    366435.528396940
+      UTM y:    5250428.00954679
+      depth:   1.136868377216160E-013  m
+      z:    866.495605468750
+
+
+
+ station #           30     CH    SLE
+      original latitude:    47.76450
+      original longitude:    8.492360
+      original UTM x:    461960.4
+      original UTM y:    5290250.
+      original depth:    2.600000      m
+      horizontal distance:    159.1681
+      target x, y, z:    461960.4       5290250.       557.9736
+      closest estimate found:   2.7994194E-09  m away
+
+      receiver located in slice           14
+                       in element        34674
+                       in elastic domain
+      at coordinates:
+      xi    =  -0.505117708792189
+      eta   =  -0.138214244920171
+      gamma =    1.00202762451818
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    461960.366978541
+      UTM y:    5290250.68564421
+      depth:    2.59999999999991       m
+      z:    557.973608398438
+
+
+
+ station #           31     CH    BRANT
+      original latitude:    46.93801
+      original longitude:    6.472980
+      original UTM x:    307663.9
+      original UTM y:    5201376.
+      original depth:   0.0000000E+00  m
+      horizontal distance:    119.9962
+      target x, y, z:    307663.9       5201376.       1169.733
+      closest estimate found:   0.0000000E+00  m away
+
+      receiver located in slice            8
+                       in element        32770
+                       in elastic domain
+      at coordinates:
+      xi    =  -0.110756005302793
+      eta   =  -0.916544302061509
+      gamma =   0.999945655061509
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    307663.901289653
+      UTM y:    5201375.28676980
+      depth:   0.000000000000000E+000  m
+      z:    1169.73278808594
+
+
+
+ station #           32     CH    SULZ
+      original latitude:    47.52753
+      original longitude:    8.111870
+      original UTM x:    433147.1
+      original UTM y:    5264172.
+      original depth:   0.0000000E+00  m
+      horizontal distance:    126.5903
+      target x, y, z:    433147.1       5264172.       528.8599
+      closest estimate found:   0.0000000E+00  m away
+
+      receiver located in slice           13
+                       in element        32925
+                       in elastic domain
+      at coordinates:
+      xi    =  -0.261180843840928
+      eta   =   0.467894350981795
+      gamma =    1.00188272323938
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    433147.089555848
+      UTM y:    5264171.51126572
+      depth:   0.000000000000000E+000  m
+      z:    528.859863281250
+
+
+
+ station #           33     CH    LADOL
+      original latitude:    46.43213
+      original longitude:    6.131510
+      original UTM x:    279626.1
+      original UTM y:    5146060.
+      original depth:   0.5000000      m
+      horizontal distance:    131.0787
+      target x, y, z:    279626.1       5146060.       1367.710
+      closest estimate found:    1.310938      m away
+
+      receiver located in slice            4
+                       in element        33070
+                       in elastic domain
+      at coordinates:
+      xi    =  -0.742952547067882
+      eta   =  -0.409324453696817
+      gamma =    1.01000000000000
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    279626.124791623
+      UTM y:    5146060.56051342
+      depth:    1.81093779232151       m
+      z:    1366.39951142643
+
+
+
+ station #           34     CH    VDL
+      original latitude:    46.48318
+      original longitude:    9.449560
+      original UTM x:    534506.2
+      original UTM y:    5147832.
+      original depth:   0.0000000E+00  m
+      horizontal distance:    124.2321
+      target x, y, z:    534506.2       5147832.       2008.773
+      closest estimate found:   9.3857033E-10  m away
+
+      receiver located in slice            7
+                       in element        33190
+                       in elastic domain
+      at coordinates:
+      xi    =   0.627941728391642
+      eta   =  -0.645134468519412
+      gamma =   0.923214803577807
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    534506.205665769
+      UTM y:    5147832.55294894
+      depth:   2.273736754432321E-013  m
+      z:    2008.77319335937
+
+
+
+ station #           35     CH    STEIN
+      original latitude:    47.66974
+      original longitude:    8.868990
+      original UTM x:    490165.0
+      original UTM y:    5279602.
+      original depth:   0.0000000E+00  m
+      horizontal distance:    161.0455
+      target x, y, z:    490165.0       5279602.       511.9853
+      closest estimate found:   1.7462302E-10  m away
+
+      receiver located in slice           14
+                       in element        33990
+                       in elastic domain
+      at coordinates:
+      xi    =   0.368932375669664
+      eta   =  -0.755558526599037
+      gamma =   0.990205133784014
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    490165.033757917
+      UTM y:    5279602.57082360
+      depth:   1.136868377216160E-013  m
+      z:    511.985321044922
+
+
+
+ station #           36     CH    MOUTI
+      original latitude:    47.29752
+      original longitude:    7.337010
+      original UTM x:    374275.2
+      original UTM y:    5239568.
+      original depth:   0.0000000E+00  m
+      horizontal distance:    106.3308
+      target x, y, z:    374275.2       5239568.       1032.640
+      closest estimate found:   9.3132257E-10  m away
+
+      receiver located in slice            9
+                       in element        35314
+                       in elastic domain
+      at coordinates:
+      xi    =   0.421914811293810
+      eta   =   0.208317757149300
+      gamma =   0.979625478690514
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    374275.156622050
+      UTM y:    5239568.31558418
+      depth:   0.000000000000000E+000  m
+      z:    1032.63989257812
+
+
+
+ station #           37     CH    WEIN2
+      original latitude:    47.52976
+      original longitude:    8.986810
+      original UTM x:    499007.2
+      original UTM y:    5264037.
+      original depth:   0.0000000E+00  m
+      horizontal distance:    152.6637
+      target x, y, z:    499007.2       5264037.       579.0294
+      closest estimate found:    1.682513      m away
+
+      receiver located in slice           14
+                       in element        32909
+                       in elastic domain
+      at coordinates:
+      xi    =  -0.817097261708424
+      eta   =   0.182659905831184
+      gamma =    1.01000000000000
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    499007.177355132
+      UTM y:    5264037.23715067
+      depth:    1.68251253380629       m
+      z:    577.346906411506
+
+
+
+ station #           38     CH    GIMEL
+      original latitude:    46.53364
+      original longitude:    6.265450
+      original UTM x:    290306.4
+      original UTM y:    5156974.
+      original depth:   0.0000000E+00  m
+      horizontal distance:    121.4864
+      target x, y, z:    290306.4       5156974.       1131.421
+      closest estimate found:   9.3132257E-10  m away
+
+      receiver located in slice            4
+                       in element        33781
+                       in elastic domain
+      at coordinates:
+      xi    =   0.734876739029268
+      eta   =   0.772681275169617
+      gamma =   0.996283606453004
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    290306.427522277
+      UTM y:    5156974.48971029
+      depth:   0.000000000000000E+000  m
+      z:    1131.42089843750
+
+
+
+ station #           39     CH    DAVOX
+      original latitude:    46.78050
+      original longitude:    9.879520
+      original UTM x:    567139.2
+      original UTM y:    5181148.
+      original depth:   0.0000000E+00  m
+      horizontal distance:    162.0072
+      target x, y, z:    567139.2       5181148.       1932.782
+      closest estimate found:   9.3857033E-10  m away
+
+      receiver located in slice            7
+                       in element        35454
+                       in elastic domain
+      at coordinates:
+      xi    =  -8.049584392327624E-002
+      eta   =   0.119237496794075
+      gamma =   0.943297427491439
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    567139.202836703
+      UTM y:    5181147.88105161
+      depth:   2.273736754432321E-013  m
+      z:    1932.78198242187
+
+
+
+ station #           40     CH    MUGIO
+      original latitude:    45.92184
+      original longitude:    9.041710
+      original UTM x:    503234.2
+      original UTM y:    5085364.
+      original depth:   0.0000000E+00  m
+      horizontal distance:    107.3975
+      target x, y, z:    503234.2       5085364.       979.2994
+      closest estimate found:    2.495135      m away
+
+      receiver located in slice            2
+                       in element        33040
+                       in elastic domain
+      at coordinates:
+      xi    =  -0.691233090122306
+      eta   =   0.667096552575575
+      gamma =    1.01000000000000
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    503234.246316782
+      UTM y:    5085364.28570212
+      depth:    2.49513526876183       m
+      z:    976.804303207801
+
+
+
+ station #           41     CH    FIESA
+      original latitude:    46.43521
+      original longitude:    8.110510
+      original UTM x:    431666.8
+      original UTM y:    5142788.
+      original depth:   0.0000000E+00  m
+      horizontal distance:    21.35772
+      target x, y, z:    431666.8       5142788.       2341.135
+      closest estimate found:   9.3132257E-10  m away
+
+      receiver located in slice            5
+                       in element        32860
+                       in elastic domain
+      at coordinates:
+      xi    =  -0.406313831922806
+      eta   =   0.641024279662405
+      gamma =   0.995391608019007
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    431666.858785012
+      UTM y:    5142788.51217965
+      depth:   0.000000000000000E+000  m
+      z:    2341.13476562500
+
+
+
+ station #           42     CH    GRIMS
+      original latitude:    46.57815
+      original longitude:    8.318864
+      original UTM x:    447810.2
+      original UTM y:    5158512.
+      original depth:   0.0000000E+00  m
+      horizontal distance:    41.78151
+      target x, y, z:    447810.2       5158512.       2060.887
+      closest estimate found:    3.562600      m away
+
+      receiver located in slice            6
+                       in element        33895
+                       in elastic domain
+      at coordinates:
+      xi    =   0.988431661733908
+      eta   =   3.889847998084976E-002
+      gamma =    1.01000000000000
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    447810.142304331
+      UTM y:    5158512.06145945
+      depth:    3.56260038486107       m
+      z:    2057.32436250576
+
+
+
+ station #           43     CH    LLS
+      original latitude:    46.84676
+      original longitude:    9.008250
+      original UTM x:    500629.0
+      original UTM y:    5188136.
+      original depth:   0.0000000E+00  m
+      horizontal distance:    102.3187
+      target x, y, z:    500629.0       5188136.       1950.674
+      closest estimate found:    17.40597      m away
+
+      receiver located in slice           10
+                       in element        31822
+                       in elastic domain
+      at coordinates:
+      xi    =  -0.466733182872373
+      eta   =   0.961480676997246
+      gamma =    1.01000000000000
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    500629.002018406
+      UTM y:    5188135.36702870
+      depth:    17.4059683554510       m
+      z:    1933.26822598049
+
+
+
+ station #           44     CH    ROTHE
+      original latitude:    47.47612
+      original longitude:    7.920930
+      original UTM x:    418695.1
+      original UTM y:    5258640.
+      original depth:    1.000000      m
+      horizontal distance:    119.3036
+      target x, y, z:    418695.1       5258640.       660.6489
+      closest estimate found:    1.734035      m away
+
+      receiver located in slice           13
+                       in element        32530
+                       in elastic domain
+      at coordinates:
+      xi    =   0.795084501287068
+      eta   =   0.718746213901802
+      gamma =    1.01000000000000
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    418695.101902279
+      UTM y:    5258640.09978019
+      depth:    2.73403472686584       m
+      z:    658.914891054384
+
+
+
+ station #           45     CH    MFERR
+      original latitude:    45.95101
+      original longitude:    7.112290
+      original UTM x:    353702.1
+      original UTM y:    5090337.
+      original depth:   0.0000000E+00  m
+      horizontal distance:    75.23026
+      target x, y, z:    353702.1       5090337.       1686.032
+      closest estimate found:   9.3132257E-10  m away
+
+      receiver located in slice            1
+                       in element        33379
+                       in elastic domain
+      at coordinates:
+      xi    =   0.607612426131716
+      eta   =  -0.770808490706073
+      gamma =    1.00817530067618
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    353702.140430863
+      UTM y:    5090336.89190300
+      depth:   2.273736754432321E-013  m
+      z:    1686.03161621094
+
+
+
+ station #           46     CH    BNALP
+      original latitude:    46.87034
+      original longitude:    8.424900
+      original UTM x:    456172.1
+      original UTM y:    5190916.
+      original depth:   0.0000000E+00  m
+      horizontal distance:    68.65505
+      target x, y, z:    456172.1       5190916.       1605.495
+      closest estimate found:    4.713709      m away
+
+      receiver located in slice           10
+                       in element        31982
+                       in elastic domain
+      at coordinates:
+      xi    =  -0.893461613592683
+      eta   =   0.867571629817284
+      gamma =    1.01000000000000
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    456172.078980608
+      UTM y:    5190916.15934474
+      depth:    4.71370958391640       m
+      z:    1600.78104139265
+
+
+
+ station #           47     CH    VINZL
+      original latitude:    46.45175
+      original longitude:    6.278150
+      original UTM x:    290966.5
+      original UTM y:    5147842.
+      original depth:   0.4000000      m
+      horizontal distance:    119.8624
+      target x, y, z:    290966.5       5147842.       553.9457
+      closest estimate found:   1.1368684E-13  m away
+
+      receiver located in slice            4
+                       in element        33206
+                       in elastic domain
+      at coordinates:
+      xi    =  -0.308505710054783
+      eta   =  -0.625052418863982
+      gamma =   0.953521957286806
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    290966.527669259
+      UTM y:    5147842.00657382
+      depth:   0.400000000000091       m
+      z:    553.945764160156
+
+
+
+ station #           48     CH    ZUR
+      original latitude:    47.36921
+      original longitude:    8.580880
+      original UTM x:    468356.3
+      original UTM y:    5246280.
+      original depth:   0.0000000E+00  m
+      horizontal distance:    121.3232
+      target x, y, z:    468356.3       5246280.       614.0529
+      closest estimate found:   1.8708126E-09  m away
+
+      receiver located in slice           10
+                       in element        35766
+                       in elastic domain
+      at coordinates:
+      xi    =   0.763881317650143
+      eta   =   0.463748519870853
+      gamma =    1.00245830061042
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    468356.348291115
+      UTM y:    5246279.55961573
+      depth:   2.273736754432321E-013  m
+      z:    614.052856445312
+
+
+
+ station #           49     CH    MMK
+      original latitude:    46.05070
+      original longitude:    7.964090
+      original UTM x:    419860.5
+      original UTM y:    5100202.
+      original depth:   0.0000000E+00  m
+      horizontal distance:    40.49854
+      target x, y, z:    419860.5       5100202.       2386.624
+      closest estimate found:   2.7945739E-09  m away
+
+      receiver located in slice            1
+                       in element        34067
+                       in elastic domain
+      at coordinates:
+      xi    =   0.484014455615626
+      eta   =   0.184167563492102
+      gamma =   0.987389966887423
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    419860.539537552
+      UTM y:    5100202.24292241
+      depth:   0.000000000000000E+000  m
+      z:    2386.62353515625
+
+
+
+ station #           50     CH    BALST
+      original latitude:    47.33599
+      original longitude:    7.694850
+      original UTM x:    401399.7
+      original UTM y:    5243328.
+      original depth:   0.0000000E+00  m
+      horizontal distance:    104.1158
+      target x, y, z:    401399.7       5243328.       722.3889
+      closest estimate found:   9.3313979E-10  m away
+
+      receiver located in slice            9
+                       in element        35590
+                       in elastic domain
+      at coordinates:
+      xi    =  -0.269405267225046
+      eta   =   0.195814051183136
+      gamma =   0.998391370047278
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    401399.644612243
+      UTM y:    5243328.42946460
+      depth:   0.000000000000000E+000  m
+      z:    722.388916015625
+
+
+
+ station #           51     CH    MUO
+      original latitude:    46.96765
+      original longitude:    8.637060
+      original UTM x:    472390.6
+      original UTM y:    5201633.
+      original depth:   0.0000000E+00  m
+      horizontal distance:    87.58404
+      target x, y, z:    472390.6       5201633.       1652.421
+      closest estimate found:    65.64075      m away
+
+      receiver located in slice           10
+                       in element        32761
+                       in elastic domain
+      at coordinates:
+      xi    =   0.610374059853947
+      eta   =  -0.368873128064836
+      gamma =    1.01000000000000
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    472390.639837583
+      UTM y:    5201633.10297496
+      depth:    65.6407569888343       m
+      z:    1586.77989730804
+
+
+
+ station #           52     CH    WILA
+      original latitude:    47.41483
+      original longitude:    8.907700
+      original UTM x:    493037.3
+      original UTM y:    5251268.
+      original depth:   0.0000000E+00  m
+      horizontal distance:    138.8210
+      target x, y, z:    493037.3       5251268.       798.9474
+      closest estimate found:    6.180897      m away
+
+      receiver located in slice           14
+                       in element        32072
+                       in elastic domain
+      at coordinates:
+      xi    =   0.531452050187212
+      eta   =  -0.939521686370269
+      gamma =    1.01000000000000
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    493037.336201444
+      UTM y:    5251268.47016614
+      depth:    6.18089666234937       m
+      z:    792.766552068119
+
+
+
+ station #           53     CH    DAGMA
+      original latitude:    47.23088
+      original longitude:    8.012475
+      original UTM x:    425247.2
+      original UTM y:    5231295.
+      original depth:    1.000000      m
+      horizontal distance:    92.85091
+      target x, y, z:    425247.2       5231295.       645.3251
+      closest estimate found:   0.0000000E+00  m away
+
+      receiver located in slice            9
+                       in element        34775
+                       in elastic domain
+      at coordinates:
+      xi    =   0.290296045315592
+      eta   =   0.635393666491772
+      gamma =   0.985530989488604
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    425247.157093019
+      UTM y:    5231294.86156850
+      depth:    1.00000000000000       m
+      z:    645.325073242188
+
+
+
+ station #           54     CH    LAUCH
+      original latitude:    46.41554
+      original longitude:    7.771660
+      original UTM x:    405601.7
+      original UTM y:    5140952.
+      original depth:   0.5000000      m
+      horizontal distance:    5.121978
+      target x, y, z:    405601.7       5140952.       2119.979
+      closest estimate found:    11.00396      m away
+
+      receiver located in slice            5
+                       in element        32713
+                       in elastic domain
+      at coordinates:
+      xi    =  -0.179881023417777
+      eta   =   0.738807114160223
+      gamma =    1.01000000000000
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    405601.657722560
+      UTM y:    5140951.54344899
+      depth:    11.5039604386893       m
+      z:    2108.97479932694
+
+
+
+ station #           55     CH    ACB
+      original latitude:    47.58772
+      original longitude:    8.254740
+      original UTM x:    443965.6
+      original UTM y:    5270748.
+      original depth:    2.600000      m
+      horizontal distance:    135.3241
+      target x, y, z:    443965.6       5270748.       406.6194
+      closest estimate found:   9.3313979E-10  m away
+
+      receiver located in slice           14
+                       in element        33317
+                       in elastic domain
+      at coordinates:
+      xi    =  -0.583019791300555
+      eta   =   0.436507052062404
+      gamma =   0.945900163766925
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    443965.610889950
+      UTM y:    5270747.73569476
+      depth:    2.60000000000002       m
+      z:    406.619421386719
+
+
+
+ station #           56     CH    LASAR
+      original latitude:    46.66648
+      original longitude:    6.490250
+      original UTM x:    308014.2
+      original UTM y:    5171162.
+      original depth:    6.000000      m
+      horizontal distance:    107.2753
+      target x, y, z:    308014.2       5171162.       575.2656
+      closest estimate found:   0.0000000E+00  m away
+
+      receiver located in slice            4
+                       in element        34754
+                       in elastic domain
+      at coordinates:
+      xi    =   0.396936678660237
+      eta   =   0.908113093634265
+      gamma =   0.971773776162841
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    308014.233039682
+      UTM y:    5171161.74423883
+      depth:    6.00000000000000       m
+      z:    575.265563964844
+
+
+
+ station #           57     CH    GOURZ
+      original latitude:    46.51109
+      original longitude:    6.741250
+      original UTM x:    326719.4
+      original UTM y:    5153314.
+      original depth:    2.000000      m
+      horizontal distance:    84.93882
+      target x, y, z:    326719.4       5153314.       784.2822
+      closest estimate found:   9.3313979E-10  m away
+
+      receiver located in slice            4
+                       in element        33552
+                       in elastic domain
+      at coordinates:
+      xi    =  -0.495640283739255
+      eta   =   0.998534297838655
+      gamma =   0.967718135554155
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    326719.398965461
+      UTM y:    5153314.31002071
+      depth:    2.00000000000011       m
+      z:    784.282226562500
+
+
+
+ station #           58     CH    FUSIO
+      original latitude:    46.45481
+      original longitude:    8.662900
+      original UTM x:    474112.3
+      original UTM y:    5144637.
+      original depth:   0.0000000E+00  m
+      horizontal distance:    63.76413
+      target x, y, z:    474112.3       5144637.       1508.917
+      closest estimate found:    12.27271      m away
+
+      receiver located in slice            6
+                       in element        32955
+                       in elastic domain
+      at coordinates:
+      xi    =  -0.894639631775179
+      eta   =   0.567350120242904
+      gamma =    1.01000000000000
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    474112.266092842
+      UTM y:    5144637.22190663
+      depth:    12.2727121458465       m
+      z:    1496.64476832290
+
+
+
+ station #           59     CH    CHAMB
+      original latitude:    46.78233
+      original longitude:    6.611840
+      original UTM x:    317705.9
+      original UTM y:    5183745.
+      original depth:   0.0000000E+00  m
+      horizontal distance:    102.7948
+      target x, y, z:    317705.9       5183745.       456.5218
+      closest estimate found:   0.0000000E+00  m away
+
+      receiver located in slice            4
+                       in element        35657
+                       in elastic domain
+      at coordinates:
+      xi    =   0.442093326909397
+      eta   =  -0.364598965917786
+      gamma =    1.00415747630946
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    317705.933210984
+      UTM y:    5183745.11503679
+      depth:   0.000000000000000E+000  m
+      z:    456.521789550781
+
+
+
+ station #           60     CH    WGT
+      original latitude:    47.09838
+      original longitude:    8.925250
+      original UTM x:    494327.5
+      original UTM y:    5216100.
+      original depth:   0.0000000E+00  m
+      horizontal distance:    113.4424
+      target x, y, z:    494327.5       5216100.       998.7960
+      closest estimate found:   9.3132257E-10  m away
+
+      receiver located in slice           10
+                       in element        33737
+                       in elastic domain
+      at coordinates:
+      xi    =   0.401200076499204
+      eta   =   0.359591990675207
+      gamma =   0.991839254124384
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    494327.528090287
+      UTM y:    5216099.52792961
+      depth:   1.136868377216160E-013  m
+      z:    998.796020507813
+
+
+
+ station #           61     CH    BERNI
+      original latitude:    46.41364
+      original longitude:    10.02310
+      original UTM x:    578628.0
+      original UTM y:    5140516.
+      original depth:    7.000000      m
+      horizontal distance:    168.0842
+      target x, y, z:    578628.0       5140516.       2334.257
+      closest estimate found:   1.1641532E-10  m away
+
+      receiver located in slice            7
+                       in element        32710
+                       in elastic domain
+      at coordinates:
+      xi    =   0.569070483253508
+      eta   =  -0.187523006728054
+      gamma =    1.00366802566195
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    578628.020166898
+      UTM y:    5140515.47354458
+      depth:    7.00000000000000       m
+      z:    2334.25708007812
+
+
+
+ station #           62     CH    ILLEZ
+      original latitude:    46.21934
+      original longitude:    6.940380
+      original UTM x:    341151.6
+      original UTM y:    5120480.
+      original depth:   0.0000000E+00  m
+      horizontal distance:    71.98449
+      target x, y, z:    341151.6       5120480.       1440.801
+      closest estimate found:    7.879711      m away
+
+      receiver located in slice            0
+                       in element        35482
+                       in elastic domain
+      at coordinates:
+      xi    =   0.419450512172457
+      eta   =  -0.744189744111450
+      gamma =    1.01000000000000
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    341151.612390142
+      UTM y:    5120479.92267796
+      depth:    7.87971109032401       m
+      z:    1432.92082601905
+
+
+
+ station #           63     G2    MORON
+      original latitude:    47.25906
+      original longitude:    7.193010
+      original UTM x:    363289.7
+      original UTM y:    5235536.
+      original depth:    3.000000      m
+      horizontal distance:    106.9305
+      target x, y, z:    363289.7       5235536.       1017.168
+      closest estimate found:    6.858049      m away
+
+      receiver located in slice            9
+                       in element        35050
+                       in elastic domain
+      at coordinates:
+      xi    =   0.501894363118709
+      eta   =  -0.354891422346020
+      gamma =    1.01000000000000
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    363289.729044751
+      UTM y:    5235536.68486293
+      depth:    9.85804876083262       m
+      z:    1010.30955377823
+
+
+
+ station #           64     G2    VD2B1
+      original latitude:    46.60900
+      original longitude:    6.610720
+      original UTM x:    317035.7
+      original UTM y:    5164488.
+      original depth:   0.3000000      m
+      horizontal distance:    96.76205
+      target x, y, z:    317035.7       5164488.       610.2911
+      closest estimate found:   9.3132257E-10  m away
+
+      receiver located in slice            4
+                       in element        34313
+                       in elastic domain
+      at coordinates:
+      xi    =  -0.529297255613054
+      eta   =   0.732728236714947
+      gamma =   0.980660973697651
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    317035.643353088
+      UTM y:    5164488.18181743
+      depth:   0.299999999999955       m
+      z:    610.291064453125
+
+
+
+ station #           65     G2    EPAUV
+      original latitude:    47.33401
+      original longitude:    7.098650
+      original UTM x:    356354.2
+      original UTM y:    5244036.
+      original depth:    2.000000      m
+      horizontal distance:    117.6451
+      target x, y, z:    356354.2       5244036.       807.2776
+      closest estimate found:   0.0000000E+00  m away
+
+      receiver located in slice            9
+                       in element        35621
+                       in elastic domain
+      at coordinates:
+      xi    =   0.450939905104977
+      eta   =  -0.302750184720593
+      gamma =   0.994623247102456
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    356354.185297330
+      UTM y:    5244035.40466300
+      depth:    2.00000000000000       m
+      z:    807.277587890625
+
+
+
+ station #           66     G2    BERLI
+      original latitude:    47.32366
+      original longitude:    7.221940
+      original UTM x:    365642.2
+      original UTM y:    5242665.
+      original depth:   0.0000000E+00  m
+      horizontal distance:    112.4086
+      target x, y, z:    365642.2       5242665.       619.1375
+      closest estimate found:   0.0000000E+00  m away
+
+      receiver located in slice            9
+                       in element        35500
+                       in elastic domain
+      at coordinates:
+      xi    =  -8.894929686252537E-002
+      eta   =   0.787015366179093
+      gamma =   0.995050548586360
+      rotation matrix:
+      nu1 =    1.000000      0.0000000E+00  0.0000000E+00
+      nu2 =   0.0000000E+00   1.000000      0.0000000E+00
+      nu3 =   0.0000000E+00  0.0000000E+00   1.000000
+      UTM x:    365642.167690667
+      UTM y:    5242665.23748363
+      depth:   0.000000000000000E+000  m
+      z:    619.137512207031
+
+
+
+ maximum error in location of all the receivers:    65.64075      m
+
+ Elapsed time for receiver detection in seconds =   3.8906947E-02
+
+ End of receiver detection - done
+
+ found a total of            1  receivers in all the slices
+
+              198  adjoint component trace files found in all slices
+
+ seismograms:
+   seismograms written by all processes
+
+   Total number of simulation steps (NSTEP)                       =        20001
+   writing out seismograms at every NTSTEP_BETWEEN_OUTPUT_SEISMOS =        20001
+   number of subsampling steps for seismograms                    =            1
+   Total number of samples for seismograms                        =        20001
+
+
+   maximum number of local receivers is            1  in slice            5
+   size of maximum seismogram array       =   0.2288933     MB
+                                          =   2.2352859E-04 GB
+
+ adjoint source arrays:
+   reading adjoint sources at every NTSTEP_BETWEEN_READ_ADJSRC =        20001
+   maximum number of local adjoint sources is            8  in slice
+           4
+   size of maximum adjoint source array =    1.831146     MB
+                                        =   1.7882288E-03 GB
+
+
+ Total number of samples for seismograms =        20001
+
+
+ Simulation setup:
+
+   no acoustic simulation
+ incorporating elastic simulation
+   no poroelastic simulation
+
+ incorporating attenuation using            3  standard linear solids
+ using attenuation from Olsen et al.
+   no anisotropy
+   no oceans
+   no gravity
+ incorporating movie simulation
+
+
+ preparing mass matrices
+ preparing constants
+ preparing wavefields
+ preparing fault simulation
+   no dynamic faults
+   no kinematic faults
+   no fault simulation
+ preparing attenuation
+   The code uses a constant Q quality factor, but approximated
+   based on a series of Zener standard linear solids (SLS).
+   Approximation is performed in the following frequency band:
+
+   number of SLS bodies:            3
+
+   Reference frequency of anelastic model (Hz):    1.000000
+                                    period (s):    1.000000
+   Attenuation frequency band min/max (Hz):  4.9999999E-03 /   10.00000
+               period band    min/max (s) :  0.1000000     /   200.0000
+   Logarithmic center frequency (Hz):  0.2236068
+                      period     (s):   4.472136
+
+ preparing gravity
+   no gravity simulation
+ preparing Stacey absorbing boundaries
+ preparing adjoint fields
+ preparing fields and constants on GPU devices
+
+   minimum memory requested     :    865.668609619141      MB per process
+
+   loading elastic arrays
+   loading adjoint receiver arrays
+   transferring initial wavefield
+
+ GPU usage: free  =   39152.19      MB          97 %
+            used  =   1384.000      MB           3 %
+            total =   40536.19      MB         100 %
+
+ preparing optimized arrays
+   number of regular shaped elements  :            0
+   number of irregular shaped elements:        35808
+   fused array done
+   bandwidth test (STREAM TRIAD):
+      memory accesses =    80.58722     MB
+      timing  min/max =   7.7221580E-03 s /   8.2606385E-03 s
+      timing      avg =   7.9310304E-03 s
+      bandwidth       =    9.922854     GB/s
+      with force_vectorization:
+      timing  min/max =   7.5121140E-03 s /   7.8157773E-03 s
+      timing      avg =   7.6587810E-03 s
+      bandwidth       =    10.27559     GB/s
+
+
+ Elapsed time for preparing timerun in seconds =   0.919522043000001
+
+ ************
+  time loop
+ ************
+               scheme:         Newmark
+
+            time step:   6.0000001E-03  s
+ number of time steps:        20001
+ total simulated time:    120.0060      seconds
+ start time:  -1.500000      seconds
+
+ All processes are synchronized before the time loop
+
+ Starting time iteration loop...
+
+ Time step #            5
+ Time:   -1.476000      seconds
+ Elapsed time in seconds =   0.490298578000001
+ Elapsed time in hh:mm:ss =      0 h 00 m 00 s
+ Mean elapsed time per time step in seconds =   9.8059714E-02
+ Max norm displacement vector U in all slices (m) =   0.0000000E+00
+ Time steps done =            5  out of        20001
+ Time steps remaining =        19996
+ Estimated remaining time in seconds =    1960.802
+ Estimated remaining time in hh:mm:ss =      0 h 32 m 40 s
+ Estimated total run time in seconds =    1961.292
+ Estimated total run time in hh:mm:ss =      0 h 32 m 41 s
+ We have done   2.4998751E-02 % of that
+ The run will finish approximately on (in local time): Thu Jun 05, 2025 13:42
+ ************************************************************
+ **** BEWARE: the above time estimates are not very reliable
+ **** because fewer than 100 iterations have been performed
+ ************************************************************
+
+ Time step #         1000
+ Time:    4.494000      seconds
+ Elapsed time in seconds =    28.7324689300000
+ Elapsed time in hh:mm:ss =      0 h 00 m 28 s
+ Mean elapsed time per time step in seconds =   2.8732469E-02
+ Max norm displacement vector U in all slices (m) =   3.4591057E-16
+ Time steps done =         1000  out of        20001
+ Time steps remaining =        19001
+ Estimated remaining time in seconds =    545.9456
+ Estimated remaining time in hh:mm:ss =      0 h 09 m 05 s
+ Estimated total run time in seconds =    574.6781
+ Estimated total run time in hh:mm:ss =      0 h 09 m 34 s
+ We have done    4.999750     % of that
+ The run will finish approximately on (in local time): Thu Jun 05, 2025 13:19
+
+ Time step #         2000
+ Time:    10.49400      seconds
+ Elapsed time in seconds =    57.3602946760000
+ Elapsed time in hh:mm:ss =      0 h 00 m 57 s
+ Mean elapsed time per time step in seconds =   2.8680148E-02
+ Max norm displacement vector U in all slices (m) =   3.2706023E-16
+ Time steps done =         2000  out of        20001
+ Time steps remaining =        18001
+ Estimated remaining time in seconds =    516.2714
+ Estimated remaining time in hh:mm:ss =      0 h 08 m 36 s
+ Estimated total run time in seconds =    573.6317
+ Estimated total run time in hh:mm:ss =      0 h 09 m 33 s
+ We have done    9.999500     % of that
+ The run will finish approximately on (in local time): Thu Jun 05, 2025 13:19
+
+ Time step #         3000
+ Time:    16.49400      seconds
+ Elapsed time in seconds =    86.1083967310000
+ Elapsed time in hh:mm:ss =      0 h 01 m 26 s
+ Mean elapsed time per time step in seconds =   2.8702799E-02
+ Max norm displacement vector U in all slices (m) =   3.0428925E-16
+ Time steps done =         3000  out of        20001
+ Time steps remaining =        17001
+ Estimated remaining time in seconds =    487.9763
+ Estimated remaining time in hh:mm:ss =      0 h 08 m 07 s
+ Estimated total run time in seconds =    574.0847
+ Estimated total run time in hh:mm:ss =      0 h 09 m 34 s
+ We have done    14.99925     % of that
+ The run will finish approximately on (in local time): Thu Jun 05, 2025 13:19
+
+ Time step #         4000
+ Time:    22.49400      seconds
+ Elapsed time in seconds =    114.637487161000
+ Elapsed time in hh:mm:ss =      0 h 01 m 54 s
+ Mean elapsed time per time step in seconds =   2.8659372E-02
+ Max norm displacement vector U in all slices (m) =   5.0378020E-16
+ Time steps done =         4000  out of        20001
+ Time steps remaining =        16001
+ Estimated remaining time in seconds =    458.5786
+ Estimated remaining time in hh:mm:ss =      0 h 07 m 38 s
+ Estimated total run time in seconds =    573.2161
+ Estimated total run time in hh:mm:ss =      0 h 09 m 33 s
+ We have done    19.99900     % of that
+ The run will finish approximately on (in local time): Thu Jun 05, 2025 13:19
+
+ Time step #         5000
+ Time:    28.49400      seconds
+ Elapsed time in seconds =    143.430406355000
+ Elapsed time in hh:mm:ss =      0 h 02 m 23 s
+ Mean elapsed time per time step in seconds =   2.8686082E-02
+ Max norm displacement vector U in all slices (m) =   5.9158433E-16
+ Time steps done =         5000  out of        20001
+ Time steps remaining =        15001
+ Estimated remaining time in seconds =    430.3199
+ Estimated remaining time in hh:mm:ss =      0 h 07 m 10 s
+ Estimated total run time in seconds =    573.7503
+ Estimated total run time in hh:mm:ss =      0 h 09 m 33 s
+ We have done    24.99875     % of that
+ The run will finish approximately on (in local time): Thu Jun 05, 2025 13:19
+
+ Time step #         6000
+ Time:    34.49400      seconds
+ Elapsed time in seconds =    172.029341890000
+ Elapsed time in hh:mm:ss =      0 h 02 m 52 s
+ Mean elapsed time per time step in seconds =   2.8671557E-02
+ Max norm displacement vector U in all slices (m) =   5.7463128E-16
+ Time steps done =         6000  out of        20001
+ Time steps remaining =        14001
+ Estimated remaining time in seconds =    401.4305
+ Estimated remaining time in hh:mm:ss =      0 h 06 m 41 s
+ Estimated total run time in seconds =    573.4598
+ Estimated total run time in hh:mm:ss =      0 h 09 m 33 s
+ We have done    29.99850     % of that
+ The run will finish approximately on (in local time): Thu Jun 05, 2025 13:19
+
+ Time step #         7000
+ Time:    40.49400      seconds
+ Elapsed time in seconds =    200.742330398000
+ Elapsed time in hh:mm:ss =      0 h 03 m 20 s
+ Mean elapsed time per time step in seconds =   2.8677477E-02
+ Max norm displacement vector U in all slices (m) =   6.4993447E-16
+ Time steps done =         7000  out of        20001
+ Time steps remaining =        13001
+ Estimated remaining time in seconds =    372.8359
+ Estimated remaining time in hh:mm:ss =      0 h 06 m 12 s
+ Estimated total run time in seconds =    573.5782
+ Estimated total run time in hh:mm:ss =      0 h 09 m 33 s
+ We have done    34.99825     % of that
+ The run will finish approximately on (in local time): Thu Jun 05, 2025 13:19
+
+ Time step #         8000
+ Time:    46.49400      seconds
+ Elapsed time in seconds =    229.274706136000
+ Elapsed time in hh:mm:ss =      0 h 03 m 49 s
+ Mean elapsed time per time step in seconds =   2.8659338E-02
+ Max norm displacement vector U in all slices (m) =   6.0792338E-16
+ Time steps done =         8000  out of        20001
+ Time steps remaining =        12001
+ Estimated remaining time in seconds =    343.9407
+ Estimated remaining time in hh:mm:ss =      0 h 05 m 43 s
+ Estimated total run time in seconds =    573.2155
+ Estimated total run time in hh:mm:ss =      0 h 09 m 33 s
+ We have done    39.99800     % of that
+ The run will finish approximately on (in local time): Thu Jun 05, 2025 13:19
+
+ Time step #         9000
+ Time:    52.49400      seconds
+ Elapsed time in seconds =    257.793575500000
+ Elapsed time in hh:mm:ss =      0 h 04 m 17 s
+ Mean elapsed time per time step in seconds =   2.8643731E-02
+ Max norm displacement vector U in all slices (m) =   2.1054452E-15
+ Time steps done =         9000  out of        20001
+ Time steps remaining =        11001
+ Estimated remaining time in seconds =    315.1097
+ Estimated remaining time in hh:mm:ss =      0 h 05 m 15 s
+ Estimated total run time in seconds =    572.9033
+ Estimated total run time in hh:mm:ss =      0 h 09 m 32 s
+ We have done    44.99775     % of that
+ The run will finish approximately on (in local time): Thu Jun 05, 2025 13:19
+
+ Time step #        10000
+ Time:    58.49400      seconds
+ Elapsed time in seconds =    286.506607291000
+ Elapsed time in hh:mm:ss =      0 h 04 m 46 s
+ Mean elapsed time per time step in seconds =   2.8650660E-02
+ Max norm displacement vector U in all slices (m) =   1.1280763E-15
+ Time steps done =        10000  out of        20001
+ Time steps remaining =        10001
+ Estimated remaining time in seconds =    286.5352
+ Estimated remaining time in hh:mm:ss =      0 h 04 m 46 s
+ Estimated total run time in seconds =    573.0419
+ Estimated total run time in hh:mm:ss =      0 h 09 m 33 s
+ We have done    49.99750     % of that
+ The run will finish approximately on (in local time): Thu Jun 05, 2025 13:19
+
+ Time step #        11000
+ Time:    64.49400      seconds
+ Elapsed time in seconds =    315.217407902000
+ Elapsed time in hh:mm:ss =      0 h 05 m 15 s
+ Mean elapsed time per time step in seconds =   2.8656129E-02
+ Max norm displacement vector U in all slices (m) =   1.2609346E-15
+ Time steps done =        11000  out of        20001
+ Time steps remaining =         9001
+ Estimated remaining time in seconds =    257.9338
+ Estimated remaining time in hh:mm:ss =      0 h 04 m 17 s
+ Estimated total run time in seconds =    573.1512
+ Estimated total run time in hh:mm:ss =      0 h 09 m 33 s
+ We have done    54.99725     % of that
+ The run will finish approximately on (in local time): Thu Jun 05, 2025 13:18
+
+ Time step #        12000
+ Time:    70.49400      seconds
+ Elapsed time in seconds =    343.817206879000
+ Elapsed time in hh:mm:ss =      0 h 05 m 43 s
+ Mean elapsed time per time step in seconds =   2.8651433E-02
+ Max norm displacement vector U in all slices (m) =   1.3811259E-15
+ Time steps done =        12000  out of        20001
+ Time steps remaining =         8001
+ Estimated remaining time in seconds =    229.2401
+ Estimated remaining time in hh:mm:ss =      0 h 03 m 49 s
+ Estimated total run time in seconds =    573.0573
+ Estimated total run time in hh:mm:ss =      0 h 09 m 33 s
+ We have done    59.99700     % of that
+ The run will finish approximately on (in local time): Thu Jun 05, 2025 13:19
+
+ Time step #        13000
+ Time:    76.49400      seconds
+ Elapsed time in seconds =    372.601722100000
+ Elapsed time in hh:mm:ss =      0 h 06 m 12 s
+ Mean elapsed time per time step in seconds =   2.8661670E-02
+ Max norm displacement vector U in all slices (m) =   1.5817581E-15
+ Time steps done =        13000  out of        20001
+ Time steps remaining =         7001
+ Estimated remaining time in seconds =    200.6604
+ Estimated remaining time in hh:mm:ss =      0 h 03 m 20 s
+ Estimated total run time in seconds =    573.2621
+ Estimated total run time in hh:mm:ss =      0 h 09 m 33 s
+ We have done    64.99675     % of that
+ The run will finish approximately on (in local time): Thu Jun 05, 2025 13:18
+
+ Time step #        14000
+ Time:    82.49400      seconds
+ Elapsed time in seconds =    401.166172380000
+ Elapsed time in hh:mm:ss =      0 h 06 m 41 s
+ Mean elapsed time per time step in seconds =   2.8654726E-02
+ Max norm displacement vector U in all slices (m) =   5.1946318E-16
+ Time steps done =        14000  out of        20001
+ Time steps remaining =         6001
+ Estimated remaining time in seconds =    171.9570
+ Estimated remaining time in hh:mm:ss =      0 h 02 m 51 s
+ Estimated total run time in seconds =    573.1232
+ Estimated total run time in hh:mm:ss =      0 h 09 m 33 s
+ We have done    69.99650     % of that
+ The run will finish approximately on (in local time): Thu Jun 05, 2025 13:19
+
+ Time step #        15000
+ Time:    88.49400      seconds
+ Elapsed time in seconds =    429.919999743000
+ Elapsed time in hh:mm:ss =      0 h 07 m 09 s
+ Mean elapsed time per time step in seconds =   2.8661333E-02
+ Max norm displacement vector U in all slices (m) =   8.4312680E-16
+ Time steps done =        15000  out of        20001
+ Time steps remaining =         5001
+ Estimated remaining time in seconds =    143.3353
+ Estimated remaining time in hh:mm:ss =      0 h 02 m 23 s
+ Estimated total run time in seconds =    573.2553
+ Estimated total run time in hh:mm:ss =      0 h 09 m 33 s
+ We have done    74.99625     % of that
+ The run will finish approximately on (in local time): Thu Jun 05, 2025 13:18
+
+ Time step #        16000
+ Time:    94.49400      seconds
+ Elapsed time in seconds =    458.481997362000
+ Elapsed time in hh:mm:ss =      0 h 07 m 38 s
+ Mean elapsed time per time step in seconds =   2.8655125E-02
+ Max norm displacement vector U in all slices (m) =   6.7106243E-16
+ Time steps done =        16000  out of        20001
+ Time steps remaining =         4001
+ Estimated remaining time in seconds =    114.6492
+ Estimated remaining time in hh:mm:ss =      0 h 01 m 54 s
+ Estimated total run time in seconds =    573.1312
+ Estimated total run time in hh:mm:ss =      0 h 09 m 33 s
+ We have done    79.99600     % of that
+ The run will finish approximately on (in local time): Thu Jun 05, 2025 13:19
+
+ Time step #        17000
+ Time:    100.4940      seconds
+ Elapsed time in seconds =    487.014986609000
+ Elapsed time in hh:mm:ss =      0 h 08 m 07 s
+ Mean elapsed time per time step in seconds =   2.8647941E-02
+ Max norm displacement vector U in all slices (m) =   3.6128925E-16
+ Time steps done =        17000  out of        20001
+ Time steps remaining =         3001
+ Estimated remaining time in seconds =    85.97247
+ Estimated remaining time in hh:mm:ss =      0 h 01 m 25 s
+ Estimated total run time in seconds =    572.9874
+ Estimated total run time in hh:mm:ss =      0 h 09 m 32 s
+ We have done    84.99575     % of that
+ The run will finish approximately on (in local time): Thu Jun 05, 2025 13:18
+
+ Time step #        18000
+ Time:    106.4940      seconds
+ Elapsed time in seconds =    515.518985969000
+ Elapsed time in hh:mm:ss =      0 h 08 m 35 s
+ Mean elapsed time per time step in seconds =   2.8639944E-02
+ Max norm displacement vector U in all slices (m) =   4.0058756E-16
+ Time steps done =        18000  out of        20001
+ Time steps remaining =         2001
+ Estimated remaining time in seconds =    57.30853
+ Estimated remaining time in hh:mm:ss =      0 h 00 m 57 s
+ Estimated total run time in seconds =    572.8275
+ Estimated total run time in hh:mm:ss =      0 h 09 m 32 s
+ We have done    89.99550     % of that
+ The run will finish approximately on (in local time): Thu Jun 05, 2025 13:19
+
+ Time step #        19000
+ Time:    112.4940      seconds
+ Elapsed time in seconds =    544.181984311000
+ Elapsed time in hh:mm:ss =      0 h 09 m 04 s
+ Mean elapsed time per time step in seconds =   2.8641157E-02
+ Max norm displacement vector U in all slices (m) =   4.5594142E-16
+ Time steps done =        19000  out of        20001
+ Time steps remaining =         1001
+ Estimated remaining time in seconds =    28.66980
+ Estimated remaining time in hh:mm:ss =      0 h 00 m 28 s
+ Estimated total run time in seconds =    572.8518
+ Estimated total run time in hh:mm:ss =      0 h 09 m 32 s
+ We have done    94.99525     % of that
+ The run will finish approximately on (in local time): Thu Jun 05, 2025 13:18
+
+ Time step #        20000
+ Time:    118.4940      seconds
+ Elapsed time in seconds =    572.977519350000
+ Elapsed time in hh:mm:ss =      0 h 09 m 32 s
+ Mean elapsed time per time step in seconds =   2.8648876E-02
+ Max norm displacement vector U in all slices (m) =   2.1907088E-17
+ Time steps done =        20000  out of        20001
+ Time steps remaining =            1
+ Estimated remaining time in seconds =   2.8648876E-02
+ Estimated remaining time in hh:mm:ss =      0 h 00 m 00 s
+ Estimated total run time in seconds =    573.0062
+ Estimated total run time in hh:mm:ss =      0 h 09 m 33 s
+ We have done    99.99500     % of that
+ The run will finish approximately on (in local time): Thu Jun 05, 2025 13:19
+
+ Time step #        20001
+ Time:    118.5000      seconds
+ Elapsed time in seconds =    573.145513014000
+ Elapsed time in hh:mm:ss =      0 h 09 m 33 s
+ Mean elapsed time per time step in seconds =   2.8655842E-02
+ Max norm displacement vector U in all slices (m) =   2.1852648E-17
+ Time steps done =        20001  out of        20001
+ Time steps remaining =            0
+ Estimated remaining time in seconds =   0.0000000E+00
+ Estimated remaining time in hh:mm:ss =      0 h 00 m 00 s
+ Estimated total run time in seconds =    573.1455
+ Estimated total run time in hh:mm:ss =      0 h 09 m 33 s
+ We have done    100.0000     % of that
+
+ Writing the seismograms
+ Total number of time steps written:        20001
+ Writing the seismograms in parallel took   0.1040730      seconds
+
+ Time loop finished. Timing info:
+ Total elapsed time in seconds =    573.411572851000
+ Total elapsed time in hh:mm:ss =      0 h 09 m 33 s
+
+ finalizing simulation
+
+
+ End of the simulation
+

@@ -1,0 +1,31 @@
+# number of interfaces
+3
+#
+# We describe each interface below, structured as a 2D-grid, with several parameters : 
+# number of points along XI and ETA, minimal XI ETA coordinates 
+# and spacing between points which must be constant.
+# Then the records contain the Z coordinates of the NXI x NETA points.
+#
+# SUPPRESS_UTM_PROJECTION  NXI  NETA LONG_MIN   LAT_MIN    SPACING_XI SPACING_ETA
+#
+# interface at 14km depth 
+.false. 545 468 -126.8 42.3 0.009007353000001217 -0.008993576000001724
+ptopo.xyz.2.dat
+
+# interface at 500m depth
+.false. 545 468 -126.8 42.3 0.009007353000001217 -0.008993576000001724
+ptopo.xyz.500m.dat
+
+# interface (topography, top of the mesh)
+.false. 545 468 -126.8 42.3 0.009007353000001217 -0.008993576000001724
+ptopo.xyz.1.dat
+
+#
+# for each layer, we give the number of spectral elements in the vertical direction
+# up to 8km layer
+22
+# up to 500 m layer
+7
+# up to top layer
+1 
+

@@ -1,0 +1,32 @@
+# interesting locations
+# for adding labels in blender
+#
+# format:  
+#city name     #lat     #lon
+#Shigatse       29.2697  88.8870
+#Tingri         28.5762  86.6197
+#Kathmandu      27.7103  85.3222
+
+# largest cities (https://en.wikipedia.org/wiki/Myanmar)
+#Yangon 		16.8409 96.1735
+Mandalay        21.9588 96.0891
+Naypyidaw       19.7633 96.0785
+Bago            17.3221 96.4663
+#Hpa-An		16.8759 97.6440
+Taunggyi        20.7888 97.0337
+#Monywa          22.1216 95.1536
+Lashio          22.9443 97.7514
+Katha           24.1821 96.3306
+Pyay            18.8406 95.2580
+Bangkok         13.8020 100.5470
+
+# mountains
+#Mount Everest  27.9881  86.9250
+#Kangchenjunga  27.7025  88.1475
+#Lhotse         27.9626  86.9336
+#Makalu         27.8857  87.0876
+#Cho Oyu        28.0960  86.6615
+
+# not on mesh
+#Lhasa         29.6526  91.1378
+

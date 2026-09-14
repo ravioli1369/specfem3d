@@ -1,0 +1,23 @@
+#
+# FK input file -- SH plane-wave injection, four-layer crust
+#
+# for each layer:  LAYER ilayer rho vp vs ztop   (last layer = homogeneous half-space)
+#
+# model description -----------------------------------------
+NLAYER             4
+LAYER 1 2720. 5800. 3460.      0.
+LAYER 2 2920. 6500. 3850. -20000.
+LAYER 3 3423. 8060. 4530. -35000.
+LAYER 4 3423. 8289. 4517. -120000.
+#------------------------------------------------------------
+# incident wave: p, sv or sh
+INCIDENT_WAVE      sh
+#------------------------------------------------------------
+# angles of incoming wave (deg)
+AZIMUTH            0.
+TAKE_OFF           30.
+#------------------------------------------------------------
+AMPLITUDE          1.0
+FREQUENCY_MAX      0.25
+TIME_WINDOW        100.
+ORIGIN_TIME        0.

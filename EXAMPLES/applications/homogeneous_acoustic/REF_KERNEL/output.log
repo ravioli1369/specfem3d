@@ -1,0 +1,169 @@
+running example: Thu Nov 14 08:44:19 UTC 2024
+
+setting up example...
+
+
+decomposing mesh...
+
+
+ **********************
+ Serial mesh decomposer
+ **********************
+
+ reading mesh files in: ./MESH-default
+
+   using NGNOD =            8
+   linear elements
+
+ total number of nodes:
+   nnodes =        23273
+ total number of spectral elements:
+   nspec =        20736
+ materials:
+   num_mat =            1
+   defined =            1 undefined =            0
+   no poroelastic material file found
+   defined materials  :            1
+   undefined materials:            1  (interfaces/tomography models/..)
+ absorbing boundaries:
+   nspec2D_xmin =          576
+   nspec2D_xmax =          576
+   nspec2D_ymin =          576
+   nspec2D_ymax =          576
+   nspec2D_bottom =         1296
+   nspec2D_top =         1296
+   no absorbing_cpml_file file found
+   no moho_surface_file file found
+
+ Par_file_faults not found: assuming that there are no faults
+
+ node valence:
+   min =            1  max =            8
+ neighbors:
+   nsize =            8
+   valence: sup_neighbor =           38 max_neighbor =           26
+
+ local time stepping: turned OFF
+
+ partitioning:
+   number of partitions requested =            4
+
+   array size xadj  :        20737  memory:    7.91053772E-02 MB
+   array size adjncy:       539136  memory:    2.05664062     MB
+   sup_neighbor     :           26
+
+   mesh2dual: max_neighbor =           26
+
+
+ partitioning type:            1
+   running SCOTCH partitioning
+
+ SCOTCH partitioning
+ finished partitioning
+
+   written file: ./OUTPUT_FILES/DATABASES_MPI/part_array.vtk
+
+ element distribution:
+   partition            0        has         5136  elements
+   partition            1        has         5216  elements
+   partition            2        has         5184  elements
+   partition            3        has         5200  elements
+   elements per partition: min/max   =         5136        5216
+   elements per partition: imbalance =    1.53374231     %
+                           (0% being totally balanced, 100% being unbalanced)
+
+ load distribution:
+   element loads: min/max =           10          10
+
+   partition            0        has        51360  load units
+   partition            1        has        52160  load units
+   partition            2        has        51840  load units
+   partition            3        has        52000  load units
+   load per partition: min/max   =        51360       52160
+   load per partition: imbalance =    1.53374231     %
+                       (0% being totally balanced, 100% being unbalanced)
+
+ partitions:
+   num         =            4
+   ninterfaces =            6
+
+   partition            0 has number of MPI interfaces:            2 maximum size        2346
+   partition            1 has number of MPI interfaces:            3 maximum size        2438
+   partition            2 has number of MPI interfaces:            2 maximum size        2438
+   partition            3 has number of MPI interfaces:            3 maximum size        2346
+
+ Databases files in directory: ./OUTPUT_FILES/DATABASES_MPI
+
+
+ finished successfully
+
+
+running database generation on  4 processors...
+
+#########################################################
+forward simulation
+#########################################################
+(running forward simulation with saving forward wavefield)
+
+Changed simulation_type to 1 and save_forward = .true. in Par_file
+
+running solver on  4 processors...
+
+#########################################################
+adjoint sources
+#########################################################
+setting up adjoint sources
+
+'OUTPUT_FILES/DB.X20.MXP.semp' -> 'SEM/DB.X20.MXX.semp'
+'OUTPUT_FILES/DB.X20.MXP.semp' -> 'SEM/DB.X20.MXY.semp'
+'OUTPUT_FILES/DB.X20.MXP.semp' -> 'SEM/DB.X20.MXZ.semp'
+
+compiling xcreate_adjsrc_traveltime:
+  using fortran compiler = gfortran
+  using C compiler       = gcc
+
+gfortran  -o xcreate_adjsrc_traveltime create_adjsrc_traveltime.o rw_ascfile_c.o
+'xcreate_adjsrc_traveltime' -> '/home/myuser/EXAMPLES/applications/homogeneous_acoustic/SEM/xcreate_adjsrc_traveltime'
+
+running adjoint source creation
+
+ xcreate_adjsrc_traveltime:
+   measurement window start/end =    9.0000000000000000      /   26.000000000000000
+   component ifile =            1   lrot =  F
+
+ reading asc file DB.X20.MXX.semp ...
+ reading asc file DB.X20.MXY.semp ...
+ reading asc file DB.X20.MXZ.semp ...
+
+ start time:  -6.0000000000000000
+ time step:  0.11359978000000037
+ number of steps:         300
+
+ i =            1 norm =    51519175283406.109
+ i =            2 norm =    51519175283406.109
+   component set to zero
+ i =            3 norm =    51519175283406.109
+   component set to zero
+
+ write to asc file DB.X20.MXX.adj
+ write to asc file DB.X20.MXY.adj
+ write to asc file DB.X20.MXZ.adj
+
+'./STATIONS_ADJOINT' -> '../DATA/STATIONS_ADJOINT'
+
+
+#########################################################
+kernel simulation
+#########################################################
+(running kernel simulation: SIMULATION_TYPE == 3)
+
+Changed simulation_type to 3 in Par_file
+
+running solver (kernel run) on  4 processors...
+
+
+see results in directory       : OUTPUT_FILES/
+    kernel outputs in directory:  ./OUTPUT_FILES/DATABASES_MPI
+
+done
+Thu Nov 14 08:44:51 UTC 2024
