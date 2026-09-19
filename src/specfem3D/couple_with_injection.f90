@@ -880,6 +880,14 @@
   ! SH decouples from P-SV: a 2x2 system for the state [ u_t ; T_tz ], worked in
   ! physical units (unit-amplitude incident transverse displacement).
   complex(kind=CUSTOM_CMPLX)                                :: E_sh(2,2),N_sh(2,2),R_sh(2,2),bot_sh(2),st_sh(2)
+  integer                                                   :: id, ndep, klast
+  integer, dimension(:), allocatable                        :: idep
+  real(kind=CUSTOM_REAL), dimension(:), allocatable          :: zdep, mu_dep
+  real(kind=CUSTOM_REAL)                                    :: zdepth
+  complex(kind=CUSTOM_CMPLX), dimension(:,:,:), allocatable  :: cache_psv, cache_sh
+  real(kind=CUSTOM_REAL), dimension(:,:,:), allocatable     :: gdep
+  real(kind=CUSTOM_REAL), dimension(:), allocatable         :: sh_a, sh_b
+  real(kind=CUSTOM_REAL)                                    :: apod, shift_samp
   complex(kind=CUSTOM_CMPLX)                                :: C_sh,mu_n,dut_f,ttz_f,srt_f
   real(kind=CUSTOM_REAL)                                    :: mu_pt
 
@@ -1236,28 +1244,86 @@
       ! endif
   enddo
 
-  ! loop every point to calculate stress/velocity
-  do iface = 1,num_abs_boundary_faces
-    ispec = abs_boundary_ispec(iface)
+  allocate(idep(npt), zdep(npt), stat=ier)
+  if (ier /= 0) stop 'error allocating FK depth index'
+  ndep = 0
+  klast = 0
+  do ipt = 1, npt
+    id = 0
+    if (klast > 0) then
+      if (zdep(klast) == zz(ipt)) id = klast
+    endif
+    if (id == 0) then
+      do j = 1, ndep
+        if (zdep(j) == zz(ipt)) then
+          id = j
+          exit
+        endif
+      enddo
+    endif
+    if (id == 0) then
+      ndep = ndep + 1
+      zdep(ndep) = zz(ipt)
+      id = ndep
+    endif
+    idep(ipt) = id
+    klast = id
+  enddo
 
-    ! GLL points on boundary face
-    do igll = 1,NGLLSQUARE
-      ! point index using table lookup
-      ipt = ipt_table(igll,iface)
+  if (myrank == 0) then
+    write(IMAIN,*) '  FK profile cache: ',ndep,' distinct depths for ',npt,' boundary points'
+    call flush_IMAIN()
+  endif
 
-      ! initializes
-      field_f(:,:) = (0.d0,0.d0)
+  if (kpsv == 3) then
+    allocate(cache_sh(2,nf2,ndep), mu_dep(ndep), stat=ier)
+    if (ier == 0) then
+      cache_sh(:,:,:) = (0.d0,0.d0)
+      mu_dep(:) = 0.0_CUSTOM_REAL
+    endif
+  else
+    allocate(cache_psv(4,nf2,ndep), stat=ier)
+    if (ier == 0) cache_psv(:,:,:) = (0.d0,0.d0)
+  endif
+  if (ier /= 0) stop 'error allocating FK profile cache'
 
-      ! time delay with respect to top of lower half-space (set to be at z==0)
-      Tdelay = ray_p * (xx(ipt)-x0) * cos(phi) + ray_p * (yy(ipt)-y0) * sin(phi) + eta_inc * (0.0-z0)
+  do id = 1, ndep
+    zdepth = zdep(id)
+    do ii = 1, nf2
+      om = 2.0 * PI * fvec(ii)
+      if ((om * Tg / 2.0)**2 > 88.0) cycle
 
-      do ii = 1, nf2
-        om = 2.0 * PI * fvec(ii)                                 !! pulsation
-
-        stf_coeff = exp(-(om * Tg/2)**2)                         !! apodization window
-        stf_coeff = stf_coeff * exp(cmplx(0,-1)*om*Tdelay)
-
-        ! bottom vector
+      if (kpsv == 3) then
+        bot_sh(1) = C_sh
+        bot_sh(2) = coeff(1,ii)
+        if (zdepth <= 0.0) then
+          st_sh(1) = E_sh(1,1)*exp( om*eta_beta(nlayer)*zdepth)*bot_sh(1) &
+                   + E_sh(1,2)*exp(-om*eta_beta(nlayer)*zdepth)*bot_sh(2)
+          st_sh(2) = E_sh(2,1)*exp( om*eta_beta(nlayer)*zdepth)*bot_sh(1) &
+                   + E_sh(2,2)*exp(-om*eta_beta(nlayer)*zdepth)*bot_sh(2)
+          mu_dep(id) = rho(nlayer)*vs(nlayer)*vs(nlayer)
+        else
+          ilayer = nlayer
+          do j = nlayer-1,1,-1
+            if (zdepth <= sum(H(j:nlayer-1))) then
+              ilayer = j; exit
+            endif
+          enddo
+          height = zdepth - sum(H(ilayer+1:nlayer-1))
+          N_sh(:,:) = E_sh(:,:)
+          do j = nlayer-1,ilayer,-1
+            if (j > ilayer) then
+              call fk_propagator_sh(om,eta_beta(j),rho(j),vs(j),H(j),R_sh)
+            else
+              call fk_propagator_sh(om,eta_beta(j),rho(j),vs(j),height,R_sh)
+            endif
+            N_sh = matmul(R_sh,N_sh)
+          enddo
+          st_sh = matmul(N_sh,bot_sh)
+          mu_dep(id) = rho(ilayer)*vs(ilayer)*vs(ilayer)
+        endif
+        cache_sh(:,ii,id) = st_sh
+      else
         bot_vec(:) = (0.,0.)
         if (kpsv == 1) then
           bot_vec(2) = coeff(1,ii)
@@ -1267,240 +1333,122 @@
           bot_vec(1) = C_1
           bot_vec(2) = coeff(1,ii)
           bot_vec(4) = coeff(2,ii)
-        else if (kpsv == 3) then
-          ! SH half-space amplitudes [ S_up ; S_down ] = [ C_sh ; reflected ]
-          bot_sh(1) = C_sh
-          bot_sh(2) = coeff(1,ii)
         endif
-
-        ! find which layer this point is in
-        if (ispec_is_elastic(ispec)) then
-          ! elastic element
-          if (kpsv == 3) then
-            ! ================= SH (transverse) point field =================
-            if (zz(ipt) <= 0.0) then
-              ! lower half-space: state = E_sh * diag(exp(+),exp(-)) * [S_up;S_down]
-              st_sh(1) = E_sh(1,1)*exp( om*eta_beta(nlayer)*zz(ipt))*bot_sh(1) &
-                       + E_sh(1,2)*exp(-om*eta_beta(nlayer)*zz(ipt))*bot_sh(2)
-              st_sh(2) = E_sh(2,1)*exp( om*eta_beta(nlayer)*zz(ipt))*bot_sh(1) &
-                       + E_sh(2,2)*exp(-om*eta_beta(nlayer)*zz(ipt))*bot_sh(2)
-              mu_pt = rho(nlayer)*vs(nlayer)*vs(nlayer)
-            else
-              ! in layers: propagate the SH state from the half-space top up to the point
-              ilayer = nlayer
-              do j = nlayer-1,1,-1
-                if (zz(ipt) <= sum(H(j:nlayer-1))) then
-                  ilayer = j; exit
-                endif
-              enddo
-              height = zz(ipt) - sum(H(ilayer+1:nlayer-1))
-              N_sh(:,:) = E_sh(:,:)
-              do j = nlayer-1,ilayer,-1
-                if (j > ilayer) then
-                  call fk_propagator_sh(om,eta_beta(j),rho(j),vs(j),H(j),R_sh)
-                else
-                  call fk_propagator_sh(om,eta_beta(j),rho(j),vs(j),height,R_sh)
-                endif
-                N_sh = matmul(R_sh,N_sh)
-              enddo
-              st_sh = matmul(N_sh,bot_sh)
-              mu_pt = rho(ilayer)*vs(ilayer)*vs(ilayer)
+        if (zdepth <= 0.0) then
+          G_mat(:,:) = (0.0,0.0)
+          G_mat(1,1) = exp(om * eta_beta(nlayer) * zdepth)
+          G_mat(2,2) = exp(-om * eta_beta(nlayer) * zdepth)
+          G_mat(3,3) = exp(om * eta_alpha(nlayer) * zdepth)
+          G_mat(4,4) = exp(-om * eta_alpha(nlayer) * zdepth)
+          N_mat = matmul(E_mat,G_mat)
+        else
+          ilayer = nlayer
+          do j = nlayer-1 , 1 , -1
+            if (zdepth <= sum(H(j:nlayer-1))) then
+              ilayer = j; exit
             endif
-            ! st_sh = [ u_t ; sigma_tz ] at this point (physical units)
-            dut_f = st_sh(1)
-            ttz_f = st_sh(2)
-            ! transverse velocity: v_t = i*om*u_t
-            field_f(ii,1) = stf_coeff * cmplx(0,om) * dut_f
-            field_f(ii,2) = (0.d0,0.d0)
-            ! stresses (physical): sigma_rt = mu du_t/dr = -i*om*p*mu*u_t ; sigma_tz = st_sh(2)
-            if (comp_stress) then
-              srt_f = cmplx(0,-1) * om * ray_p * mu_pt * dut_f
-              field_f(ii,3) = stf_coeff * srt_f       ! sigma_rt
-              field_f(ii,4) = stf_coeff * ttz_f       ! sigma_tz
-              field_f(ii,5) = (0.d0,0.d0)
-            endif
-          else
-          if (zz(ipt) <= 0.0) then
-            ! in lower half space
-            G_mat(:,:) = (0.0,0.0)
-            ! incident, up-going S-wave
-            ! (A5): Gamma_11 = e^(-i nu_s z) = e^( (-i nu_s) * z ) = e^(nu_be * z)
-            G_mat(1,1) = exp(om * eta_beta(nlayer) * zz(ipt))
-            ! reflected, down-going S-wave
-            ! (A5): Gamma_22 = e^(i nu_s z)  = e^( -(-i nu_s) * z ) = e^(-nu_be * z)
-            G_mat(2,2) = exp(-om * eta_beta(nlayer) * zz(ipt))
-            ! incident, up-going P-wave
-            ! (A5): Gamma_33 = e^(-i nu_p z) = e^( (-i nu_p) * z ) = e^(nu_al * z)
-            G_mat(3,3) = exp(om * eta_alpha(nlayer) * zz(ipt))
-            ! reflected, down-going P-wave
-            ! (A5): Gamma_44 = e^(i nu_p z) = e^( -(-i nu_p) * z ) = e^(-nu_al * z)
-            G_mat(4,4) = exp(-om * eta_alpha(nlayer) * zz(ipt))
-            N_mat = matmul(E_mat,G_mat)
-          else
-            ! in layers
-            ! determines layer in which the point lies
-            ! note: indexing assumes that last layer (nlayer) being the bottom, lower halfspace,
-            !       and the first layer (1) being at the top surface
-            ilayer = nlayer
-            do j = nlayer-1 , 1 , -1
-              if (zz(ipt) <= sum(H(j:nlayer-1))) then
-                ilayer = j; exit
-              endif
-            enddo
-
-            if (have_fluid_layer .and. ilayer <= ilayer_ac) then
-              print *,'Error: point cannot be in acoustic domain'
-              print *,'  z = ',zz(ipt),'z_ref = ',zz(ipt) + Z_REF_for_FK,'H_layers = ', sum(H(ilayer_ac+1:nlayer-1))
-              print *,'  layer = ',ilayer,'ilayer_ac',ilayer_ac,'nlayer = ',nlayer
-              print *,'  H = ',H(:)
-              print *,'exiting...'
-              stop
-            endif
-
-            ! new thickness
-            height = zz(ipt) - sum(H(ilayer+1:nlayer-1))
-
-            ! propagation to this point
-            N_mat(:,:) = E_mat(:,:)
-            do j = nlayer-1,ilayer,-1
-              if ( j > ilayer) then
-                call fk_propagator_psv(om,eta_alpha(j),eta_beta(j),rho(j), &
-                                       vs(j),H(j),ray_p,gamma1(j),Pmat)
-              else
-                call fk_propagator_psv(om,eta_alpha(j),eta_beta(j),rho(j), &
-                                       vs(j),height,ray_p,gamma1(j),Pmat)
-              endif
-              ! resulting matrix
-              N_mat = gamma0(j) * matmul(Pmat,N_mat)
-            enddo
-          endif ! endif (zz(ipt) <= 0.0)
-
-          !! zz(ipt) is the height of point with respect to the lower layer
-          bot_vec = matmul(N_mat,bot_vec)
-          dx_f = bot_vec(1) ! y_1
-          dz_f = bot_vec(2) ! y_3
-
-          ! for the Stacey boundary contribution, we need velocity = (i om) displacement (in frequency domain)
-          field_f(ii,1) = stf_coeff * dx_f * cmplx(0,-1) * cmplx(0,om)             ! (i om)u_x
-          field_f(ii,2) = stf_coeff * dz_f * cmplx(0,om)                           ! (i om)u_z
-
-          ! stress
-          if (comp_stress) then
-            txz_f = bot_vec(3)      ! tilde{y}_4
-            tzz_f = bot_vec(4)      ! tilde{y}_6
-
-            field_f(ii,3) = stf_coeff * om * ray_p * (xi1(ipt)*tzz_f - 4.0*xim(ipt)*dx_f) ! T_xx
-            field_f(ii,4) = stf_coeff * om * ray_p * txz_f * cmplx(0,-1)                  ! T_xz
-            field_f(ii,5) = stf_coeff * om * ray_p * tzz_f                                ! T_zz
-          endif
-          endif ! kpsv == 3 (SH) / else (P-SV)
-
-        else if (ispec_is_acoustic(ispec)) then
-          ! acoustic element
-          if (nlayer == 1 .and. ilayer_ac == 1) then
-            ! single acoustic layer (nlayer=1 and ilayer_ac=1)
-            ! in this case, all points are within the single acoustic half-space.
-            ilayer = 1
-            height = zz(ipt)  ! Point's coordinate relative to the top of the acoustic half-space (z = 0 in FK system)
-          else
-            ! multi-layered acoustic models
-            ! in this case, points should be in fluid layers
-            ! determines layer in which the point lies
-            ! note: indexing assumes that last layer (ilayer_ac) being the bottom acoustic layer,
-            !       and the first layer (1) being at the top surface
-            ilayer = ilayer_ac + 1
-            do j = ilayer_ac + 1 , 1 , -1
-              if (zz(ipt) <= sum(H(j:nlayer-1))) then
-                ilayer = j; exit
-              endif
-            enddo
-            height = zz(ipt) - sum(H(ilayer+1:nlayer-1))
-
-            ! checks position
-            if (height < 0.) then
-              print *,'Error: please check, point is in the air'
-              print *,'  z = ',zz(ipt),'z_ref = ',zz(ipt) + Z_REF_for_FK,'H_layers = ',sum(H(ilayer+1:nlayer-1))
-              print *,'  layer = ',ilayer,'ilayer_ac',ilayer_ac,'nlayer = ',nlayer
-              print *,'  H = ',H(:)
-              print *,'exiting...'
-              stop
-            endif
-          endif
-
-          ! propagate to this point - acoustic layers
-          Qmat_I(:,:) = 0.0_CUSTOM_CMPLX
-          Qmat_I(1,1) = cmplx(1.0,0.0,kind=CUSTOM_CMPLX)
-          Qmat_I(2,2) = cmplx(1.0,0.0,kind=CUSTOM_CMPLX)
-          do j = ilayer_ac,ilayer,-1
-            if (j > ilayer) then
-              call fk_propagator_ac(om,eta_alpha(j),rho(j),H(j),ray_p,Qmat(:,:))
-            else
-              call fk_propagator_ac(om,eta_alpha(j),rho(j),height,ray_p,Qmat(:,:))
-            endif
-            ! resulting matrix
-            Qmat_I = matmul(Qmat,Qmat_I)
           enddo
-          Qmat = Qmat_I
-
-          ! propagation to this point - elastic layers
+          height = zdepth - sum(H(ilayer+1:nlayer-1))
           N_mat(:,:) = E_mat(:,:)
-          do j = nlayer-1,ilayer_ac+1,-1
-            call fk_propagator_psv(om,eta_alpha(j),eta_beta(j),rho(j), &
-                                   vs(j),H(j),ray_p,gamma1(j),Pmat)
-            ! resulting matrix
+          do j = nlayer-1,ilayer,-1
+            if ( j > ilayer) then
+              call fk_propagator_psv(om,eta_alpha(j),eta_beta(j),rho(j), &
+                                     vs(j),H(j),ray_p,gamma1(j),Pmat)
+            else
+              call fk_propagator_psv(om,eta_alpha(j),eta_beta(j),rho(j), &
+                                     vs(j),height,ray_p,gamma1(j),Pmat)
+            endif
             N_mat = gamma0(j) * matmul(Pmat,N_mat)
           enddo
-
-          !! zz(ipt) is the height of point with respect to the lower layer
-          bot_vec = matmul(N_mat,bot_vec)
-
-          bot_vec(4) = -bot_vec(4) ! P = - \sigma_zz
-          bot_vec(1) = bot_vec(2) ! uz
-          bot_vec(2) = bot_vec(4) ! P / k
-          bot_vec(1:2) = matmul(Qmat,bot_vec(1:2))
-
-          ! make sure free boundary condition is satisfied
-          if (abs(height - H(1)) < 1.0e-6 * H(1)) bot_vec(2) = 0.
-
-          ! for acoustic wave we cache dchi/displ
-          ! ux/uz
-          dz_f = bot_vec(1) ! uz
-          dx_f = cmplx(0,-1) * ray_p**2 / rho(ilayer) * bot_vec(2)  ! ux = -ik P / (rho om^2)
-
-          ! for the Stacey boundary contribution, we need displ
-          field_f(ii,1) = stf_coeff * dx_f              ! u_x
-          field_f(ii,2) = stf_coeff * dz_f              ! u_z
-
-          ! dchi
-          ! we set 3:5 the same value to match the api: FFTINV
-          field_f(ii,3:5) = cmplx(0.,1.) * bot_vec(2) * stf_coeff * ray_p ! dchi = - P / (i om) = i vec(2) * rayp
-        endif ! end ispec_is_elastic(ispec)
-
-      enddo ! end ii for freq
-
-      ! pad negative f, and convert to time series
-      do ii = 2, nf2-1
-        field_f(nf+2-ii,:) = conjg(field_f(ii,:))
-      enddo
-
-      ! inverse fast fourier transform
-      field(:,:) = 0.0
-      do j = 1, nvar
-        ! inverse FFT
-        call FFTinv(npow,field_f(:,j),zign_neg,dt,field(:,j),mpow)
-
-        ! wrap around to start from t0: here one has to be careful if t0/dt is not
-        ! exactly an integer, assume nn > 0
-        if (nn > 0) then
-          dtmp(1:nn) = field(npts2-nn+1:npts2,j)
-          field(nn+1:npts2,j) = field(1:npts2-nn,j)
-          field(1:nn,j) = dtmp(1:nn)
-        else if (nn < 0) then
-          dtmp(1:nn) = field(1:nn,j)
-          field(1:npts-nn,j) = field(nn+1:npts,j)
-          field(npts-nn+1:npts,j) = dtmp(1:nn)
         endif
-      enddo
+        cache_psv(:,ii,id) = matmul(N_mat,bot_vec)
+      endif
+    enddo
+  enddo
+
+  allocate(gdep(0:npts2+2,nvar,ndep), sh_a(npts2), sh_b(npts2), stat=ier)
+  if (ier /= 0) stop 'error allocating FK depth series'
+
+  do id = 1, ndep
+    field_f(:,:) = (0.d0,0.d0)
+    do ii = 1, nf2
+      om = 2.0 * PI * fvec(ii)
+      if ((om * Tg / 2.0)**2 > 88.0) cycle
+      apod = exp(-(om * Tg/2)**2)
+      if (kpsv == 3) then
+        dut_f = cache_sh(1,ii,id)
+        ttz_f = cache_sh(2,ii,id)
+        field_f(ii,1) = apod * cmplx(0,om) * dut_f
+        if (comp_stress) then
+          field_f(ii,3) = apod * cmplx(0,-1) * om * ray_p * mu_dep(id) * dut_f
+          field_f(ii,4) = apod * ttz_f
+        endif
+      else
+        dx_f  = cache_psv(1,ii,id)
+        dz_f  = cache_psv(2,ii,id)
+        txz_f = cache_psv(3,ii,id)
+        tzz_f = cache_psv(4,ii,id)
+        field_f(ii,1) = apod * dx_f * cmplx(0,-1) * cmplx(0,om)
+        field_f(ii,2) = apod * dz_f * cmplx(0,om)
+        if (comp_stress) then
+          field_f(ii,3) = apod * om * ray_p * tzz_f
+          field_f(ii,4) = apod * om * ray_p * txz_f * cmplx(0,-1)
+          field_f(ii,5) = apod * om * ray_p * dx_f
+        endif
+      endif
+    enddo
+
+    do ii = 2, nf2-1
+      field_f(nf+2-ii,:) = conjg(field_f(ii,:))
+    enddo
+
+    do j = 1, nvar
+      call FFTinv(npow,field_f(:,j),zign_neg,dt,field(:,j),mpow)
+      if (nn > 0) then
+        dtmp(1:nn) = field(npts2-nn+1:npts2,j)
+        field(nn+1:npts2,j) = field(1:npts2-nn,j)
+        field(1:nn,j) = dtmp(1:nn)
+      endif
+      gdep(1:npts2,j,id) = field(1:npts2,j)
+      gdep(0,j,id)       = field(npts2,j)
+      gdep(npts2+1,j,id) = field(1,j)
+      gdep(npts2+2,j,id) = field(2,j)
+    enddo
+  enddo
+
+  ! loop every point to calculate stress/velocity
+  do iface = 1,num_abs_boundary_faces
+    ispec = abs_boundary_ispec(iface)
+
+    ! GLL points on boundary face
+    do igll = 1,NGLLSQUARE
+      ! point index using table lookup
+      ipt = ipt_table(igll,iface)
+
+      ! time delay with respect to top of lower half-space (set to be at z==0)
+      Tdelay = ray_p * (xx(ipt)-x0) * cos(phi) + ray_p * (yy(ipt)-y0) * sin(phi) + eta_inc * (0.0-z0)
+      shift_samp = Tdelay * df * real(npts2,kind=CUSTOM_REAL)
+      id = idep(ipt)
+
+      if (kpsv == 3) then
+        call fk_shift_series(gdep(0,1,id), npts2, shift_samp, field(1,1))
+        field(:,2) = 0.0_CUSTOM_REAL
+        field(:,5) = 0.0_CUSTOM_REAL
+        if (comp_stress) then
+          call fk_shift_series(gdep(0,3,id), npts2, shift_samp, field(1,3))
+          call fk_shift_series(gdep(0,4,id), npts2, shift_samp, field(1,4))
+        endif
+      else
+        call fk_shift_series(gdep(0,1,id), npts2, shift_samp, field(1,1))
+        call fk_shift_series(gdep(0,2,id), npts2, shift_samp, field(1,2))
+        if (comp_stress) then
+          call fk_shift_series(gdep(0,3,id), npts2, shift_samp, sh_a)
+          call fk_shift_series(gdep(0,5,id), npts2, shift_samp, sh_b)
+          call fk_shift_series(gdep(0,4,id), npts2, shift_samp, field(1,4))
+          field(:,3) = xi1(ipt)*sh_a(:) - 4.0*xim(ipt)*sh_b(:)
+          field(:,5) = sh_a(:)
+        endif
+      endif
 
       !! store undersampled version of velocity  FK solution
       if (ispec_is_elastic(ispec)) then
@@ -1635,6 +1583,11 @@
   endif
 
   ! free temporary arrays
+  deallocate(gdep, sh_a, sh_b)
+  deallocate(idep, zdep)
+  if (allocated(cache_psv)) deallocate(cache_psv)
+  if (allocated(cache_sh)) deallocate(cache_sh)
+  if (allocated(mu_dep)) deallocate(mu_dep)
   deallocate(fvec,coeff, field_f, field, dtmp)
   deallocate(tmp_f1, tmp_f2, tmp_f3, tmp_t1, tmp_t2, tmp_t3)
   deallocate(tmp_c)
@@ -1915,6 +1868,38 @@
 !! #################  INTERPOLATION ROUTINES IN TIME DOMAIN ######################################
 
 !! compute and store spline coefficients
+
+  subroutine fk_shift_series(g, n, s_samp, out)
+
+!
+
+  use constants, only: CUSTOM_REAL
+  implicit none
+  integer, intent(in)                  :: n
+  real(kind=CUSTOM_REAL), intent(in)   :: g(0:n+2), s_samp
+  real(kind=CUSTOM_REAL), intent(out)  :: out(n)
+  integer                              :: k, i, i0, b
+  real(kind=CUSTOM_REAL)               :: u, c_1, c0, c1, c2
+
+  b = ceiling(s_samp)
+  u = real(b,kind=CUSTOM_REAL) - s_samp
+  c_1 = -u*(u-1.0)*(u-2.0)/6.0
+  c0  = (u+1.0)*(u-1.0)*(u-2.0)/2.0
+  c1  = -(u+1.0)*u*(u-2.0)/2.0
+  c2  = (u+1.0)*u*(u-1.0)/6.0
+
+  i0 = modulo(-b, n)
+  do k = 1, n
+    i = i0 + k
+    if (i > n) i = i - n
+    out(k) = c_1*g(i-1) + c0*g(i) + c1*g(i+1) + c2*g(i+2)
+  enddo
+
+  end subroutine fk_shift_series
+
+!
+!-------------------------------------------------------------------------------------------------
+!
 
   subroutine compute_spline_coef_to_store(Sig, npts, spline_coeff, tmp_c)
 
