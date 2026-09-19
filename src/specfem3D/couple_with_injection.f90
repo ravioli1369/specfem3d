@@ -1038,6 +1038,8 @@
     ! sqrt of a negative number (FPE). Identical to the real sqrt when the argument is
     ! positive (sub-critical); gives the evanescent vertical slowness when negative.
     eta_alpha(i) = -cmplx(0,1) * sqrt( cmplx( 1.0/vp(i)**2 - ray_p**2, 0.0, kind=CUSTOM_CMPLX) )
+    ! half-space only: a reflected evanescent wave must decay away from the free surface
+    if (i == nlayer .and. 1.0/vp(i)**2 - ray_p**2 < 0.0) eta_alpha(i) = -eta_alpha(i)
 
     ! SV
     ! see (A5): E_11 = -i nu_s / k = -i omega sqrt(1/beta^2 - p^2) / k
@@ -1046,6 +1048,7 @@
       eta_beta(i) = 0.
     else
       eta_beta(i) = -cmplx(0,1) * sqrt( cmplx( 1.0/vs(i)**2 - ray_p**2, 0.0, kind=CUSTOM_CMPLX) )
+      if (i == nlayer .and. 1.0/vs(i)**2 - ray_p**2 < 0.0) eta_beta(i) = -eta_beta(i)
     endif
 
     ! auxiliary variables
@@ -1262,7 +1265,7 @@
           bot_vec(4) = coeff(2,ii)
         else if (kpsv == 2) then
           bot_vec(1) = C_1
-          bot_vec(3) = coeff(1,ii)
+          bot_vec(2) = coeff(1,ii)
           bot_vec(4) = coeff(2,ii)
         else if (kpsv == 3) then
           ! SH half-space amplitudes [ S_up ; S_down ] = [ C_sh ; reflected ]
