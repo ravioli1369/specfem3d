@@ -1594,15 +1594,15 @@
 
         !! store undersamped version of tractions FK solution
         tmp_t1(1:NF_FOR_STORING) = Tract_FK(1,ipt,1:NF_FOR_STORING)
-        call compute_spline_coef_to_store(tmp_t1, npts2, tmp_t2, tmp_c)
+        call compute_spline_coef_to_store(tmp_t1, NF_FOR_STORING, tmp_t2, tmp_c)
         Tract_FK(1,ipt,1:NF_FOR_STORING) = tmp_t2(1:NF_FOR_STORING)
 
         tmp_t1(1:NF_FOR_STORING) = Tract_FK(2,ipt,1:NF_FOR_STORING)
-        call compute_spline_coef_to_store(tmp_t1, npts2, tmp_t2, tmp_c)
+        call compute_spline_coef_to_store(tmp_t1, NF_FOR_STORING, tmp_t2, tmp_c)
         Tract_FK(2,ipt,1:NF_FOR_STORING) = tmp_t2(1:NF_FOR_STORING)
 
         tmp_t1(1:NF_FOR_STORING) = Tract_FK(3,ipt,1:NF_FOR_STORING)
-        call compute_spline_coef_to_store(tmp_t1, npts2, tmp_t2, tmp_c)
+        call compute_spline_coef_to_store(tmp_t1, NF_FOR_STORING, tmp_t2, tmp_c)
         Tract_FK(3,ipt,1:NF_FOR_STORING) = tmp_t2(1:NF_FOR_STORING)
       endif
 

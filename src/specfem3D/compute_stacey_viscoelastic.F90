@@ -522,7 +522,7 @@
     Veloc_dsm_boundary, Tract_dsm_boundary, Veloc_axisem, Tract_axisem, &
     Veloc_specfem, Tract_specfem
   ! FK3D calculation
-  use specfem_par_coupling, only: ipt_table, NP_RESAMP, Veloc_FK, Tract_FK
+  use specfem_par_coupling, only: ipt_table, NP_RESAMP, Veloc_FK, Tract_FK, type_kpsv_fk
   ! boundary injection wavefield parts for saving together with b_absorb_field
   use specfem_par_coupling, only: b_boundary_injection_field
 
@@ -547,6 +547,7 @@
   integer :: ipt, ii, kk, iim1, iip1, iip2
   real(kind=CUSTOM_REAL) :: cs1,cs2,cs3,cs4,w
   real(kind=CUSTOM_REAL) :: vx_FK,vy_FK,vz_FK,tx_FK,ty_FK,tz_FK
+  logical :: injection_is_sh
 
 !! comment from Vadim Monteiller, Feb 2017:
 
@@ -615,6 +616,8 @@
   !       this is due to the fact that we only call this routine within the Stacey routine,
   !       and also because we store the coupling contribution together with the Stacey ones for reconstructing the wavefield
   !       in kernels simulations.
+
+  injection_is_sh = (INJECTION_TECHNIQUE_TYPE == INJECTION_TECHNIQUE_IS_FK .and. type_kpsv_fk == 3)
 
   ! gets velocity & stress for boundary points
   select case(INJECTION_TECHNIQUE_TYPE)
@@ -764,9 +767,19 @@
 
         ! adds stacey term to injected stresses:
         ! velocity vector component * vp * rho in normal direction + vs * rho component tangential to it
-        tx = tx + rho_vp(i,j,k,ispec)*vn*nx + rho_vs(i,j,k,ispec)*(vx-vn*nx)
-        ty = ty + rho_vp(i,j,k,ispec)*vn*ny + rho_vs(i,j,k,ispec)*(vy-vn*ny)
-        tz = tz + rho_vp(i,j,k,ispec)*vn*nz + rho_vs(i,j,k,ispec)*(vz-vn*nz)
+        if (injection_is_sh) then
+          ! an incident SH wave is pure shear whichever way the face points, so splitting it into a
+          ! P-like normal part damps that part with the wrong impedance. On the faces the wave runs
+          ! along, an SH wave moves the ground entirely along the normal, and the mismatch radiates
+          ! a spurious P-SV field carrying opposite signs on opposite faces.
+          tx = tx + rho_vs(i,j,k,ispec)*vx
+          ty = ty + rho_vs(i,j,k,ispec)*vy
+          tz = tz + rho_vs(i,j,k,ispec)*vz
+        else
+          tx = tx + rho_vp(i,j,k,ispec)*vn*nx + rho_vs(i,j,k,ispec)*(vx-vn*nx)
+          ty = ty + rho_vp(i,j,k,ispec)*vn*ny + rho_vs(i,j,k,ispec)*(vy-vn*ny)
+          tz = tz + rho_vp(i,j,k,ispec)*vn*nz + rho_vs(i,j,k,ispec)*(vz-vn*nz)
+        endif
 
         ! adds final stress term for injected wavefield (weak form)
         accel(1,iglob) = accel(1,iglob) - tx*jacobianw
@@ -800,7 +813,7 @@
   ! boundary coupling
   use shared_parameters, only: COUPLE_WITH_INJECTION_TECHNIQUE
   ! FK3D calculation
-  use specfem_par_coupling, only: b_boundary_injection_field
+  use specfem_par_coupling, only: b_boundary_injection_field, type_kpsv_fk
 
   implicit none
   ! communication overlap
@@ -822,7 +835,7 @@
 
   ! compute contribution in device
   call compute_coupled_injection_contribution_el_device(Mesh_pointer,b_boundary_injection_field, &
-                                                        SAVE_STACEY)
+                                                        SAVE_STACEY,type_kpsv_fk)
 
   end subroutine compute_coupled_injection_contribution_el_GPU
 

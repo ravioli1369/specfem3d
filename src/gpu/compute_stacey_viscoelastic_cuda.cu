@@ -323,12 +323,14 @@ extern EXTERN_LANG
 void FC_FUNC_(compute_coupled_injection_contribution_el_device,
               COMPUTE_COUPLED_INJECTION_CONTRIBUTION_EL_DEVICE)(long* Mesh_pointer,
                                                                 realw* b_boundary_injection_field,
-                                                                int *SAVE_STACEY_f) {
+                                                                int *SAVE_STACEY_f,
+                                                                int *type_kpsv_fk_f) {
 
   TRACE("compute_coupled_injection_contribution_el_device");
 
   Mesh* mp = (Mesh*)(*Mesh_pointer); //get mesh pointer out of fortran integer container
   int SAVE_STACEY = *SAVE_STACEY_f;
+  int injection_is_sh = (*type_kpsv_fk_f == 3);
 
   // checks if anything to do
   if (mp->d_num_abs_boundary_faces == 0) return;
@@ -368,7 +370,8 @@ void FC_FUNC_(compute_coupled_injection_contribution_el_device,
                                                                            mp->simulation_type,
                                                                            SAVE_STACEY,
                                                                            mp->d_num_abs_boundary_faces,
-                                                                           mp->d_b_boundary_injection_field);
+                                                                           mp->d_b_boundary_injection_field,
+                                                                           injection_is_sh);
     }
 #endif
 #ifdef USE_HIP
@@ -388,7 +391,8 @@ void FC_FUNC_(compute_coupled_injection_contribution_el_device,
                                                                            mp->simulation_type,
                                                                            SAVE_STACEY,
                                                                            mp->d_num_abs_boundary_faces,
-                                                                           mp->d_b_boundary_injection_field);
+                                                                           mp->d_b_boundary_injection_field,
+                                                                           injection_is_sh);
     }
 #endif
 

@@ -318,7 +318,8 @@ __global__ void compute_stacey_elastic_injection_kernel(const realw* veloc_inj,
                                                         int SIMULATION_TYPE,
                                                         int SAVE_STACEY,
                                                         int num_abs_boundary_faces,
-                                                        realw* b_boundary_injection_field) {
+                                                        realw* b_boundary_injection_field,
+                                                        const int injection_is_sh) {
 
   int igll = threadIdx.x; // tx
   int iface = blockIdx.x + gridDim.x*blockIdx.y; // bx
@@ -363,9 +364,19 @@ __global__ void compute_stacey_elastic_injection_kernel(const realw* veloc_inj,
       // compute traction
       rho_vp_temp = rho_vp[INDEX4(NGLLX,NGLLX,NGLLX,i,j,k,ispec)];
       rho_vs_temp = rho_vs[INDEX4(NGLLX,NGLLX,NGLLX,i,j,k,ispec)];
+      if (injection_is_sh) {
+        // an incident SH wave is pure shear whichever way a face points, so splitting it into a
+        // P-like normal part damps that part with the wrong impedance. On the faces the wave runs
+        // along, an SH wave moves the ground entirely along the normal, and the mismatch radiates
+        // a spurious P-SV field that is odd about the propagation axis.
+        tx = rho_vs_temp*vx;
+        ty = rho_vs_temp*vy;
+        tz = rho_vs_temp*vz;
+      } else {
       tx = rho_vp_temp*vn*nx + rho_vs_temp*(vx-vn*nx);
       ty = rho_vp_temp*vn*ny + rho_vs_temp*(vy-vn*ny);
       tz = rho_vp_temp*vn*nz + rho_vs_temp*(vz-vn*nz);
+      }
 
       // add traction from tract_inj
       tx += tract_inj[INDEX3(NDIM,NGLL2,0,igll,iface)];
