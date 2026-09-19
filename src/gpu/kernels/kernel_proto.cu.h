@@ -586,7 +586,8 @@ __global__ void compute_stacey_elastic_injection_kernel(const realw* veloc_inj,
                                                         int SIMULATION_TYPE,
                                                         int SAVE_STACEY,
                                                         int num_abs_boundary_faces,
-                                                        realw* b_boundary_injection_field) ;
+                                                        realw* b_boundary_injection_field,
+                                                        const int injection_is_sh) ;
 
 
 //
